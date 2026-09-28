@@ -206,14 +206,19 @@
       </section>
       <div id="usable-result">
         <div class="result-summary" id="result-summary"></div>
-        <section class="feedback-card" id="feedback-card" hidden>
-          <p class="card-label">이번 세트에서 먼저 볼 한 가지</p>
-          <h3 id="feedback-title"></h3>
-          <p id="feedback-text"></p>
+        <section class="rep-overview" aria-labelledby="rep-overview-title">
+          <div class="rep-overview-heading">
+            <div><p class="card-label">반복 전체 보기</p><h3 id="rep-overview-title">반복별 저점 한눈에</h3></div>
+            <p>막대의 세로선은 이 세트의 중앙값입니다.</p>
+          </div>
+          <div class="rep-grid" id="rep-grid" role="list" aria-label="반복별 저점 장면"></div>
         </section>
-        <div class="rep-strip" id="rep-strip" role="list" aria-label="반복 선택"></div>
+        <section class="feedback-card" id="feedback-card" hidden>
+          <p class="card-label">눈에 띈 점</p>
+          <div class="feedback-list" id="feedback-list"></div>
+        </section>
         <div class="evidence-grid">
-          <article class="evidence-card">
+          <article class="evidence-card" id="evidence-detail">
             <div class="card-topline"><div><p class="card-label">근거 장면</p><h3 id="evidence-title">선택한 반복의 가장 낮은 장면</h3></div><span class="frame-time" id="frame-time"></span></div>
             <canvas id="evidence-canvas"></canvas>
             <p class="evidence-caption" id="evidence-caption"></p>
@@ -227,8 +232,8 @@
         </div>
         <div class="compare-card" id="compare-card"></div>
         <section class="recommend-section" id="recommend-section" hidden>
-          <div class="section-heading compact"><div><p class="eyebrow">다음 세트 전 선택사항</p><h2>관련 부위를 가볍게 준비해 보세요.</h2></div></div>
-          <p class="recommend-disclaimer">정면 영상만으로 변화의 원인을 알 수 없습니다. 아래 콘텐츠는 관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 선택지입니다.</p>
+          <div class="section-heading compact"><div><p class="eyebrow" id="recommend-eyebrow">다음 세트 전 선택사항</p><h2 id="recommend-title">관련 부위를 가볍게 준비해 보세요.</h2></div></div>
+          <p class="recommend-disclaimer" id="recommend-disclaimer">관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.</p>
           <div class="recommend-grid" id="recommend-grid"></div>
           <p class="attribution">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
         </section>
@@ -272,6 +277,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20260928-jsnull-fix"></script>
+  <script type="module" src="./app.js?v=20260928-rep-overview"></script>
 </body>
 </html>

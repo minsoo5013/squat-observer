@@ -93,6 +93,34 @@
           "reason": "관찰 결과와 상관없이, 다음 세트 전에 선 자세로 가볍게 몸을 푸는 동적 스트레칭 루틴입니다."
         }
       ]
+    },
+    "steady_set": {
+      "label": "다음 세트 전·운동 후 루틴",
+      "optional": true,
+      "items": [
+        {
+          "catalog_id": "8b0a7071f186660e",
+          "title": "유산소 운동 전 동적 루틴 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00596.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00596/0AUDLJ08S_00596_SC_00003.jpeg",
+          "duration_seconds": 143,
+          "age_group": "공통",
+          "equipment": "없음",
+          "relation": "다음 세트 전",
+          "reason": "다음 세트 전에 전신을 가볍게 움직여 볼 수 있는 동적 루틴입니다."
+        },
+        {
+          "catalog_id": "ce0c2322458c3f2c",
+          "title": "하지 루틴 스트레칭2",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00593.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00593/0AUDLJ08S_00593_SC_00004.jpeg",
+          "duration_seconds": 90,
+          "age_group": "공통",
+          "equipment": "매트",
+          "relation": "운동을 마친 뒤",
+          "reason": "스쿼트를 마친 뒤 하체를 천천히 정리해 볼 수 있는 루틴입니다."
+        }
+      ]
     }
   }
 }
