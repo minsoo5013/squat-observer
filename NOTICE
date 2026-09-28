@@ -1,0 +1,24 @@
+Third-Party Notices
+===================
+
+This web service uses or loads the following third-party components and public data. Their original licenses and terms apply to those materials.
+
+1. MediaPipe Pose Landmarker model and MediaPipe Tasks Vision
+   - Provider: Google LLC
+   - License: Apache License 2.0
+   - https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker
+   - https://www.apache.org/licenses/LICENSE-2.0
+
+2. Pyodide
+   - Provider: Pyodide contributors
+   - License: Mozilla Public License 2.0
+   - https://pyodide.org/
+   - https://www.mozilla.org/MPL/2.0/
+
+3. 국민체력100 동영상 정보
+   - Provider: 서울올림픽기념국민체육진흥공단
+   - License: 공공누리 제1유형(출처표시)
+   - Source: https://www.data.go.kr/data/15108846/openapi.do
+   - Data snapshot used by this service: 2026-09-25
+
+Project-specific code, documentation, and figures are Copyright © 2026 이민수 (Minsoo Lee). All rights reserved. See LICENSE.

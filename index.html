@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#18202a">
+  <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
+  <title>스쿼트 반복 관찰</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="처음으로">스쿼트 반복 관찰</a>
+    <nav class="header-nav" aria-label="주요 안내">
+      <a href="#method">분석 방법</a>
+      <a href="#source">데이터 출처</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>스쿼트 한 세트의 무릎 간격과 깊이 변화를 장면으로 확인하세요</h1>
+        <p class="hero-lede">달라진 부분과 관련된 국민체력100 스트레칭 영상을 연결하고, 한 세트 더 하면 직전 세트와 비교합니다.</p>
+        <div class="hero-actions">
+          <button class="button button-primary" data-action="go-capture">촬영해서 분석하기</button>
+          <button class="button button-quiet" data-action="open-upload">영상 파일 올리기</button>
+          <button class="button button-quiet" id="sample-button" hidden>샘플로 전체 흐름 보기</button>
+        </div>
+        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
+      </div>
+      <aside class="result-preview" aria-label="결과 화면 예시">
+        <div class="preview-heading"><strong>결과 화면 예시</strong><span>실제 값은 분석 후 표시됩니다</span></div>
+        <div class="preview-reps" aria-hidden="true"><span>1회차</span><span class="active">2회차</span><span>3회차</span><span>4회차</span></div>
+        <div class="preview-grid">
+          <div class="preview-evidence">
+            <small>선택한 반복의 저점 장면</small>
+            <img src="./assets/fig_bottom_knee_focus.svg" alt="스쿼트 저점 자세에서 양쪽 무릎을 강조한 정면 선 그림">
+          </div>
+          <div class="preview-notes">
+            <div class="preview-point"><small>한 가지 관찰 포인트</small><strong>예) 후반 반복에서 무릎 간격이 초반보다 좁아지는 경향이 보였습니다</strong></div>
+            <div class="preview-content"><small>관련 콘텐츠</small><strong>국민체력100 스트레칭 영상</strong><span>관찰된 부위와 연결합니다.</span></div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="home-section method-section" id="method">
+      <div class="home-section-heading"><h2>이렇게 진행됩니다</h2><p>촬영부터 다음 세트 비교까지 한 기기 안에서 이어집니다.</p></div>
+      <ol class="service-flow">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="13" width="32" height="24" rx="3"/><path d="M18 13l3-4h6l3 4M18 37l-3 5M30 37l3 5"/><circle cx="24" cy="25" r="7"/></svg>
+          <strong>촬영하거나 올리기</strong><span>준비자세 2초부터 정면 전신 한 세트를 기록합니다.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 11h32v26H8zM13 32l7-8 5 5 5-7 5 10"/><circle cx="16" cy="18" r="3"/></svg>
+          <strong>반복별 저점 장면 찾기</strong><span>반복 구간을 나누고 각 반복의 가장 낮은 장면을 찾습니다.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 9h26v30H11zM17 17h14M17 24h14M17 31h8"/></svg>
+          <strong>한 가지 포인트 보기</strong><span>세트 안에서 먼저 볼 변화를 근거 장면과 함께 보여 줍니다.</span>
+        </li>
+        <li class="source-step">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="11" width="32" height="26" rx="3"/><path d="M21 19l9 5-9 5zM14 42h20"/></svg>
+          <strong>관련 스트레칭 보기</strong><span>국민체력100 동영상에서 관련 부위의 콘텐츠를 연결합니다.</span><small>국민체육진흥공단 공공데이터</small>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 15h12v24H9zM27 9h12v30H27zM14 10l-4 5 4 5M34 4l4 5-4 5"/></svg>
+          <strong>한 세트 더 하고 비교하기</strong><span>같은 조건의 새 세트를 직전 세트와 같은 항목으로 비교합니다.</span>
+        </li>
+      </ol>
+      <div class="method-definition-heading">
+        <h3>분석 지표 정의</h3>
+        <p>준비자세와 반복별 저점 장면에서 같은 위치를 비교합니다.</p>
+      </div>
+      <figure class="metric-definition" id="metric-definition">
+        <img src="./assets/fig_metrics_A2_A45_D1.svg" alt="준비자세와 저점의 무릎 간격, 무릎 안쪽 움직임, 골반과 발목의 세로거리 정의">
+        <figcaption>정면 영상에서 사용하는 세 지표의 위치와 비교 기준입니다.</figcaption>
+      </figure>
+    </section>
+
+    <section class="home-section metrics-section" id="metrics">
+      <div class="home-section-heading"><h2>무엇을 보나요</h2><p>정면 화면에서 확인할 수 있는 세 가지 움직임을 준비자세와 비교합니다.</p></div>
+      <div class="metric-cards">
+        <article>
+          <svg viewBox="0 0 96 54" aria-hidden="true"><path d="M28 8v38M68 8v38M28 27h40M33 22l-5 5 5 5M63 22l5 5-5 5"/></svg>
+          <h3>무릎 간격</h3><p>가장 낮은 자세의 무릎 간격을 처음 준비자세와 비교합니다.</p>
+        </article>
+        <article>
+          <svg viewBox="0 0 96 54" aria-hidden="true"><path d="M24 8l8 38M72 8l-8 38M25 31h18M71 31H53M38 26l5 5-5 5M58 26l-5 5 5 5"/></svg>
+          <h3>무릎의 안쪽 움직임</h3><p>준비자세에서 저점까지 양쪽 무릎이 몸 중앙 쪽으로 움직인 정도를 봅니다.</p>
+        </article>
+        <article>
+          <svg viewBox="0 0 96 54" aria-hidden="true"><path d="M27 10h42M27 44h42M48 10v34M43 15l5-5 5 5M43 39l5 5 5-5"/></svg>
+          <h3>가장 낮은 자세의 깊이</h3><p>골반과 발목 사이의 세로거리를 준비자세와 비교합니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="home-section limits-section">
+      <div class="home-section-heading"><h2>이 서비스가 하지 않는 것</h2></div>
+      <ul>
+        <li>몸 상태를 진단하거나 자세에 우열과 순위를 매기지 않습니다.</li>
+        <li>관찰된 변화의 원인을 단정하지 않습니다.</li>
+        <li>영상과 관절 좌표를 서버로 보내지 않습니다.</li>
+        <li>정면 영상에서 보이는 반복 사이의 변화만 다룹니다.</li>
+      </ul>
+    </section>
+
+    <section class="workspace" id="capture-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">촬영</p>
+          <h2 id="capture-title">측정 조건을 먼저 맞춰주세요.</h2>
+          <p class="section-deck" id="capture-deck">휴대폰을 정면에 고정하고, 머리부터 발끝까지 한 화면에 담습니다.</p>
+        </div>
+        <ol class="stepper" aria-label="진행 단계">
+          <li class="active"><span>1</span>촬영</li>
+          <li><span>2</span>분석</li>
+          <li><span>3</span>결과</li>
+        </ol>
+      </div>
+
+      <div class="capture-layout">
+        <article class="camera-card">
+          <div class="camera-stage" id="camera-stage">
+            <video id="preview-video" playsinline muted></video>
+            <canvas id="preview-overlay" aria-hidden="true"></canvas>
+            <div class="camera-placeholder" id="camera-placeholder">
+              <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              <strong>카메라 연결 대기</strong>
+              <small>연결하면 이 영역에 정면 영상이 표시됩니다.</small>
+            </div>
+            <div class="record-badge" id="record-badge" hidden><span></span> 녹화 중 <b id="record-time">00:00</b></div>
+            <div class="countdown" id="countdown" hidden></div>
+          </div>
+          <div class="camera-controls">
+            <button class="button button-primary" id="camera-button">카메라 켜기</button>
+            <button class="button button-record" id="record-button" hidden>준비자세부터 녹화</button>
+            <button class="button button-stop" id="stop-button" hidden>촬영 마치기</button>
+            <label class="button button-primary file-button">
+              영상 올리기
+              <input id="video-file" type="file" accept="video/*" hidden>
+            </label>
+          </div>
+          <p class="local-note">촬영 영상과 관절 좌표는 서버로 전송되지 않습니다.</p>
+        </article>
+
+        <aside class="guide-card">
+          <p class="card-label">촬영 방법</p>
+          <h3>처음 2초를<br>준비자세로 기록합니다.</h3>
+          <ol class="instruction-list">
+            <li><span>1</span><div><strong>화면 정면에 서기</strong><small>어깨부터 발끝까지 화면 안에 둡니다.</small></div></li>
+            <li><span>2</span><div><strong>2초 동안 준비자세</strong><small>녹화가 시작되면 잠시 서 있습니다.</small></div></li>
+            <li><span>3</span><div><strong>평소처럼 한 세트</strong><small>가능하면 6회 이상을 권장하지만 필수 조건은 아닙니다.</small></div></li>
+          </ol>
+          <div class="notice-box"><b>파일로 분석할 때</b><br>브라우저에서 재생 가능한 MP4/WebM을 권장합니다. 일부 iPhone HEVC 파일은 Chrome·Windows에서 열리지 않을 수 있습니다. 60fps·가변 프레임 영상도 브라우저가 재생한 화면을 30fps 기준으로 읽습니다. 90초를 넘는 영상은 한 세트만 잘라 다시 올려 주세요.</div>
+          <div class="retry-position-note" id="retry-position-note" hidden><b>두 번째 세트 전 확인</b><br>폰 위치와 서는 자리를 첫 번째 세트와 같게 맞춰 주세요.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="analysis-panel" id="analysis-section" hidden>
+      <p class="eyebrow">기기 안에서 분석 중</p>
+      <h2 id="analysis-title">영상을 읽고 있습니다.</h2>
+      <p id="analysis-detail">분석에 필요한 도구를 준비하는 중입니다.</p>
+      <div class="progress" role="progressbar" aria-label="영상 분석 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4"><i id="analysis-progress"></i></div>
+      <p class="analysis-count" id="analysis-count"></p>
+    </section>
+
+    <section class="results" id="results-section" hidden aria-live="polite">
+      <div class="section-heading results-heading">
+        <div><p class="eyebrow">이번 세트 결과</p><h2 id="result-title">반복별 변화를 확인해 보세요.</h2></div>
+        <button class="button button-quiet" id="restart-button">다른 영상 분석</button>
+      </div>
+      <div class="notice-stack" id="result-notices"></div>
+      <section class="unusable-result" id="unusable-result" hidden>
+        <p class="card-label">분석 보류</p>
+        <h3>이 영상은 반복별 값을 표시하지 않습니다.</h3>
+        <div id="unusable-messages"></div>
+        <button class="button button-primary" id="retake-button">다시 촬영하거나 올리기</button>
+      </section>
+      <div id="usable-result">
+        <div class="result-summary" id="result-summary"></div>
+        <section class="feedback-card" id="feedback-card" hidden>
+          <p class="card-label">이번 세트에서 먼저 볼 한 가지</p>
+          <h3 id="feedback-title"></h3>
+          <p id="feedback-text"></p>
+        </section>
+        <div class="rep-strip" id="rep-strip" role="list" aria-label="반복 선택"></div>
+        <div class="evidence-grid">
+          <article class="evidence-card">
+            <div class="card-topline"><div><p class="card-label">근거 장면</p><h3 id="evidence-title">선택한 반복의 가장 낮은 장면</h3></div><span class="frame-time" id="frame-time"></span></div>
+            <canvas id="evidence-canvas"></canvas>
+            <p class="evidence-caption" id="evidence-caption"></p>
+          </article>
+          <article class="observation-card">
+            <p class="card-label">관찰된 값</p>
+            <h3 id="observation-title">1회차</h3>
+            <div id="observation-lines"></div>
+            <div class="uncertainty-note" id="uncertainty-note"></div>
+          </article>
+        </div>
+        <div class="compare-card" id="compare-card"></div>
+        <section class="recommend-section" id="recommend-section" hidden>
+          <div class="section-heading compact"><div><p class="eyebrow">다음 세트 전 선택사항</p><h2>관련 부위를 가볍게 준비해 보세요.</h2></div></div>
+          <p class="recommend-disclaimer">정면 영상만으로 변화의 원인을 알 수 없습니다. 아래 콘텐츠는 관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 선택지입니다.</p>
+          <div class="recommend-grid" id="recommend-grid"></div>
+          <p class="attribution">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
+        </section>
+        <section class="retry-card" id="retry-section" hidden>
+          <div class="retry-copy">
+            <p class="card-label">한 세트 더 확인</p>
+            <h3>같은 촬영 조건에서 다시 비교할 수 있습니다.</h3>
+            <p id="retry-context"></p>
+            <div class="retry-warmup" id="retry-warmup"></div>
+          </div>
+          <button class="button button-primary" id="retry-button">같은 안내로 한 세트 더</button>
+        </section>
+        <details class="technical-details">
+          <summary>분석 기록과 한계 보기</summary>
+          <div id="technical-content"></div>
+        </details>
+      </div>
+      <section class="verify-section" id="verify-section" hidden>
+        <div class="verify-heading"><p class="eyebrow">두 세트 비교</p><h2>직전 세트와 새 세트를 나란히 봅니다.</h2><p>같은 사람의 연속된 두 세트에서 변화 방향만 확인합니다.</p></div>
+        <div id="verify-results"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="source">
+    <div>
+      <strong>데이터 출처</strong>
+      <p>서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보</p>
+      <p>공공누리 제1유형 · 데이터 스냅샷 2026-09-25</p>
+    </div>
+    <dl>
+      <div><dt>운영주체</dt><dd>이민수(개인)</dd></div>
+      <div><dt>구축일</dt><dd>2026-09-28</dd></div>
+      <div><dt>사용 기술</dt><dd>MediaPipe Pose Landmarker, Pyodide</dd></div>
+      <div><dt>문의</dt><dd>운영주체 이민수</dd></div>
+    </dl>
+    <p class="footer-license">외부 구성요소: MediaPipe·Tasks Vision(Apache 2.0), Pyodide(MPL 2.0) · 공단 콘텐츠: 공공누리 제1유형 · <a href="./NOTICE">자세한 라이선스 고지</a></p>
+    <p class="footer-note">운동 수행의 반복별 변화를 관찰하는 정보 서비스이며 의료 서비스가 아닙니다.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

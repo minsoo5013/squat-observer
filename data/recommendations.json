@@ -1,0 +1,98 @@
+{
+  "status": "selected_2026-09-28_claude_frame_review",
+  "source": {
+    "provider": "서울올림픽기념국민체육진흥공단",
+    "data_name": "국민체력100 동영상 정보",
+    "data_portal_url": "https://www.data.go.kr/data/15108846/openapi.do",
+    "license": "공공누리 제1유형(출처표시)"
+  },
+  "selection_basis": {
+    "method": "국민체력100 메타데이터(부위·체력요인·대상·도구)로 후보를 좁힌 뒤 영상 프레임을 직접 확인해 스쿼트 관찰 항목별로 선정",
+    "evidence_note": "연관 근거일 뿐 원인·효과 근거가 아니다. 무릎 간격: 발목 배측굴곡과 무릎 안쪽 이동의 연관(Bell 2008, Macrum 2012). 깊이: 발목 배측굴곡·고관절 굴곡 가동범위와 스쿼트 깊이의 연관(Kim 2015).",
+    "excluded": "내전근 스트레칭·둔근 활성화(자동 추천 제외 규칙), 짝 운동(00993 누워 발목 당겨주기 — 보조자 동작 포함), 어르신 전용, 점프 동작"
+  },
+  "rules": {
+    "knee_width_decrease": {
+      "label": "무릎 간격 변화와 관련된 발목·종아리 스트레칭 콘텐츠",
+      "items": [
+        {
+          "catalog_id": "db77a219dc6ba27d",
+          "title": "서서 발목 누르기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00995.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00995/0AUDLJ08S_00995_SC_00019.jpeg",
+          "duration_seconds": 92,
+          "age_group": "청소년",
+          "equipment": "의자",
+          "relation": "발목·종아리 · 선 자세",
+          "reason": "무릎 간격 변화와 관련해 연구에서 함께 다뤄진 발목(종아리) 부위를, 스쿼트처럼 선 자세에서 의자를 잡고 늘려 보는 콘텐츠입니다."
+        },
+        {
+          "catalog_id": "d619c9de54c546de",
+          "title": "수건 이용하여 장딴지 늘리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00623.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00623/0AUDLJ08S_00623_SC_00003.jpeg",
+          "duration_seconds": 61,
+          "age_group": "공통",
+          "equipment": "수건",
+          "relation": "발목·종아리 · 앉은 자세",
+          "reason": "같은 발목(종아리) 부위를 앉아서 수건으로 천천히 늘려 보는 콘텐츠입니다."
+        }
+      ]
+    },
+    "relative_shallow_rep": {
+      "label": "앉는 깊이 변화와 관련된 발목·고관절 스트레칭 콘텐츠",
+      "items": [
+        {
+          "catalog_id": "db77a219dc6ba27d",
+          "title": "서서 발목 누르기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00995.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00995/0AUDLJ08S_00995_SC_00019.jpeg",
+          "duration_seconds": 92,
+          "age_group": "청소년",
+          "equipment": "의자",
+          "relation": "발목·종아리 · 선 자세",
+          "reason": "앉는 깊이와 관련해 연구에서 함께 다뤄진 발목 부위를 선 자세에서 늘려 보는 콘텐츠입니다."
+        },
+        {
+          "catalog_id": "8ef70fc5f55bda0e",
+          "title": "엉덩이 스트레칭(매트)",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00588.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00588/0AUDLJ08S_00588_SC_00003.jpeg",
+          "duration_seconds": 71,
+          "age_group": "공통",
+          "equipment": "매트",
+          "relation": "고관절(엉덩이) · 누운 자세",
+          "reason": "앉는 깊이와 관련해 연구에서 함께 다뤄진 고관절 부위를 누워서 늘려 보는 콘텐츠입니다."
+        },
+        {
+          "catalog_id": "ce0c2322458c3f2c",
+          "title": "하지 루틴 스트레칭2",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00593.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00593/0AUDLJ08S_00593_SC_00004.jpeg",
+          "duration_seconds": 90,
+          "age_group": "공통",
+          "equipment": "매트",
+          "relation": "하체 루틴 · 누운 자세",
+          "reason": "무릎을 가슴 쪽으로 당기는 동작 등 고관절을 굽히는 스트레칭이 들어 있는 하체 루틴입니다."
+        }
+      ]
+    },
+    "before_next_set": {
+      "label": "다음 세트 전 가볍게 몸 풀기 (선택)",
+      "optional": true,
+      "items": [
+        {
+          "catalog_id": "8b0a7071f186660e",
+          "title": "유산소 운동 전 동적 루틴 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00596.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00596/0AUDLJ08S_00596_SC_00003.jpeg",
+          "duration_seconds": 143,
+          "age_group": "공통",
+          "equipment": "없음",
+          "relation": "전신 동적 스트레칭 · 선 자세",
+          "reason": "관찰 결과와 상관없이, 다음 세트 전에 선 자세로 가볍게 몸을 푸는 동적 스트레칭 루틴입니다."
+        }
+      ]
+    }
+  }
+}

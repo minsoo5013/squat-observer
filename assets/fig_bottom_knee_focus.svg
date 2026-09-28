@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 360" role="img" aria-labelledby="title desc">
+  <title id="title">스쿼트 저점 자세와 무릎 강조</title>
+  <desc id="desc">정면에서 본 스쿼트 저점 자세의 인체 선화이며 양쪽 무릎이 파란색 원으로 강조되어 있습니다.</desc>
+  <defs>
+    <linearGradient id="torso" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5f7f8"/>
+      <stop offset="1" stop-color="#dce3e7"/>
+    </linearGradient>
+    <filter id="kneeGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+  <rect width="520" height="360" rx="12" fill="#fbfcfc"/>
+  <path d="M54 326H466" fill="none" stroke="#d7dde1" stroke-width="2"/>
+  <path d="M260 34V326" fill="none" stroke="#e8ecee" stroke-width="1.5" stroke-dasharray="5 8"/>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M198 112L158 151L178 206" stroke="#34414a" stroke-width="28"/>
+    <path d="M322 112L362 151L342 206" stroke="#34414a" stroke-width="28"/>
+    <path d="M198 112L158 151L178 206" stroke="#e1e6e9" stroke-width="21"/>
+    <path d="M322 112L362 151L342 206" stroke="#e1e6e9" stroke-width="21"/>
+
+    <path d="M220 219L157 262" stroke="#34414a" stroke-width="37"/>
+    <path d="M300 219L363 262" stroke="#34414a" stroke-width="37"/>
+    <path d="M220 219L157 262" stroke="#dbe2e6" stroke-width="29"/>
+    <path d="M300 219L363 262" stroke="#dbe2e6" stroke-width="29"/>
+
+    <path d="M157 263L187 319" stroke="#34414a" stroke-width="32"/>
+    <path d="M363 263L333 319" stroke="#34414a" stroke-width="32"/>
+    <path d="M157 263L187 319" stroke="#e7ebed" stroke-width="24"/>
+    <path d="M363 263L333 319" stroke="#e7ebed" stroke-width="24"/>
+
+    <path d="M180 321H219" stroke="#34414a" stroke-width="18"/>
+    <path d="M301 321H340" stroke="#34414a" stroke-width="18"/>
+    <path d="M180 321H219" stroke="#e7ebed" stroke-width="12"/>
+    <path d="M301 321H340" stroke="#e7ebed" stroke-width="12"/>
+  </g>
+
+  <path d="M205 102Q260 80 315 102L305 208Q260 230 215 208Z" fill="url(#torso)" stroke="#34414a" stroke-width="4"/>
+  <path d="M220 205Q260 222 300 205L294 230Q260 244 226 230Z" fill="#cbd5db" stroke="#34414a" stroke-width="4"/>
+  <ellipse cx="260" cy="64" rx="31" ry="35" fill="#edf1f3" stroke="#34414a" stroke-width="4"/>
+  <path d="M244 96Q260 105 276 96" fill="none" stroke="#34414a" stroke-width="8" stroke-linecap="round"/>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M196 116L226 155L260 143" stroke="#34414a" stroke-width="20"/>
+    <path d="M324 116L294 155L260 143" stroke="#34414a" stroke-width="20"/>
+    <path d="M196 116L226 155L260 143" stroke="#eef1f3" stroke-width="14"/>
+    <path d="M324 116L294 155L260 143" stroke="#eef1f3" stroke-width="14"/>
+  </g>
+
+  <circle cx="157" cy="263" r="25" fill="#4d8fc9" opacity=".18" filter="url(#kneeGlow)"/>
+  <circle cx="363" cy="263" r="25" fill="#4d8fc9" opacity=".18" filter="url(#kneeGlow)"/>
+  <circle cx="157" cy="263" r="18" fill="#edf5fb" stroke="#235f9f" stroke-width="5"/>
+  <circle cx="363" cy="263" r="18" fill="#edf5fb" stroke="#235f9f" stroke-width="5"/>
+  <circle cx="157" cy="263" r="6" fill="#235f9f"/>
+  <circle cx="363" cy="263" r="6" fill="#235f9f"/>
+</svg>

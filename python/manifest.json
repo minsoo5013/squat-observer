@@ -1,0 +1,19 @@
+[
+  "frontal/__init__.py",
+  "frontal/engine.py",
+  "frontal/adapter.py",
+  "frontal/standing.py",
+  "frontal/signals.py",
+  "frontal/features.py",
+  "frontal/landmarks.py",
+  "frontal/consistency.py",
+  "frontal/diagnostics.py",
+  "frontal/a6_candidates.py",
+  "frontal/rhythm.py",
+  "frontal/schema.py",
+  "frontal/compare_sets.py",
+  "frontal/feedback_rules.py",
+  "frontal/qc.py",
+  "src/__init__.py",
+  "src/squat_core.py"
+]
