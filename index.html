@@ -206,6 +206,14 @@
       </section>
       <div id="usable-result">
         <div class="result-summary" id="result-summary"></div>
+        <section class="rep-charts" aria-labelledby="rep-charts-title">
+          <div class="rep-charts-heading">
+            <div><p class="card-label">반복별 변화</p><h3 id="rep-charts-title">회차별 막대그래프</h3></div>
+            <p>막대를 누르면 아래 저점 장면과 나란히 비교가 함께 바뀝니다.</p>
+          </div>
+          <div class="rep-chart-scroll" id="rep-chart-scroll"><div class="rep-chart-inner" id="rep-chart-inner"></div></div>
+          <p class="rep-chart-caption" id="rep-chart-caption"></p>
+        </section>
         <section class="rep-overview" aria-labelledby="rep-overview-title">
           <div class="rep-overview-heading">
             <div><p class="card-label">반복 전체 보기</p><h3 id="rep-overview-title">반복별 저점 한눈에</h3></div>
@@ -277,6 +285,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20260928-rep-overview"></script>
+  <script type="module" src="./app.js?v=20260928-rep-charts"></script>
 </body>
 </html>

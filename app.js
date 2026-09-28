@@ -633,6 +633,91 @@ function feedbackTagsForRep(index) {
   return tags;
 }
 
+function feedbackMatchesChart(item, family) {
+  return family === 'knee' ? item.rule_id?.startsWith('KNEE') : item.rule_id?.startsWith('DEPTH');
+}
+
+function chartEarlyReps(family) {
+  const reps = new Set();
+  for (const item of orderedFeedback()) {
+    if (!feedbackMatchesChart(item, family) || !item.rule_id?.endsWith('_LATE')) continue;
+    const early = family === 'knee' ? item.evidence?.A2?.early_reps : item.evidence?.early_reps;
+    (early || []).forEach((rep) => reps.add(Number(rep)));
+  }
+  return reps;
+}
+
+function renderBarChart({ family, title, detail, metric, values }) {
+  const usableValues = values.filter((value, index) => repUsable(index) && finite(value));
+  const middle = median(usableValues);
+  const maximum = Math.max(0, ...usableValues, finite(middle) ? middle : 0);
+  const scaleMaximum = maximum > 0 ? maximum * 1.12 : 1;
+  const barAreaHeight = 128;
+  const medianBottom = 27 + Math.max(0, Math.min(1, middle / scaleMaximum)) * barAreaHeight;
+  const earlyReps = chartEarlyReps(family);
+  const feedback = orderedFeedback().filter((item) => feedbackMatchesChart(item, family));
+  const bars = values.map((value, index) => {
+    const repNumber = index + 1;
+    const excluded = !repUsable(index) || !finite(value);
+    const flagged = feedback.some((item) => (item.reps || []).map(Number).includes(repNumber));
+    const early = !flagged && earlyReps.has(repNumber);
+    const tag = excluded ? '제외' : flagged ? (family === 'knee' ? '좁음' : '얕음') : early ? '초반' : '';
+    const height = excluded ? 0 : Math.max(2, Math.min(barAreaHeight, (Math.max(0, value) / scaleMaximum) * barAreaHeight));
+    const stateClass = excluded ? 'excluded' : flagged ? 'flagged' : early ? 'early' : '';
+    const valueText = excluded ? '—' : percent(value);
+    return `
+      <button class="rep-bar-button ${stateClass} ${index === state.selectedRep ? 'active' : ''}" data-rep="${index}" data-metric="${metric}" aria-current="${index === state.selectedRep}" aria-label="${repNumber}회차 ${escapeHtml(title)} ${valueText}${tag ? `, ${tag}` : ''}">
+        <span class="rep-bar-tag">${tag}</span>
+        <strong>${valueText}</strong>
+        <span class="rep-bar-space">${excluded ? '' : `<span class="rep-bar-fill" style="height:${height}px"></span>`}</span>
+        <small>${repNumber}회</small>
+      </button>`;
+  }).join('');
+  return `
+    <article class="rep-bar-chart">
+      <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)}</span></div>
+      <div class="rep-bar-stage">
+        <span class="rep-chart-zero">0</span>
+        ${finite(middle) ? `<span class="rep-chart-median" style="bottom:${medianBottom}px"><em>세트 중앙값 ${percent(middle)}</em></span>` : ''}
+        <div class="rep-bar-grid" style="grid-template-columns:repeat(${values.length},minmax(0,1fr))">${bars}</div>
+      </div>
+    </article>`;
+}
+
+function renderRepCharts() {
+  const kneeValues = state.result.per_rep.map((rep) => rep.A2_knee_w_rel_stand);
+  const depthValues = state.result.per_rep.map((rep) => (
+    finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null
+  ));
+  const count = state.result.per_rep.length;
+  const scroll = $('#rep-chart-scroll');
+  scroll.classList.toggle('scrollable', count > 12);
+  $('#rep-chart-inner').style.minWidth = count > 12 ? `${count * 30}px` : '';
+  $('#rep-chart-inner').innerHTML = [
+    renderBarChart({
+      family: 'knee',
+      title: '무릎 간격',
+      detail: 'A2 · 준비자세 대비',
+      metric: 'A2_knee_w_rel_stand',
+      values: kneeValues,
+    }),
+    renderBarChart({
+      family: 'depth',
+      title: '골반이 내려간 정도',
+      detail: '100% − 골반–발목 세로거리 · 높을수록 깊음',
+      metric: 'D1_hip_ankle_rel',
+      values: depthValues,
+    }),
+  ].join('');
+  $('#rep-chart-caption').textContent = primaryFeedback()?.text
+    || '반복 사이 큰 변화가 두드러지지 않았습니다.';
+  document.querySelectorAll('.rep-bar-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      void selectRep(Number(button.dataset.rep), button.dataset.metric);
+    });
+  });
+}
+
 function metricPosition(value, values) {
   if (!finite(value) || !values.length) return 50;
   const minimum = Math.min(...values);
@@ -660,7 +745,7 @@ function medianBar(value, values, excluded, label) {
 }
 
 function updateRepSelection() {
-  document.querySelectorAll('.rep-overview-card').forEach((card) => {
+  document.querySelectorAll('.rep-overview-card, .rep-bar-button').forEach((card) => {
     const active = Number(card.dataset.rep) === state.selectedRep;
     card.classList.toggle('active', active);
     card.setAttribute('aria-current', active ? 'true' : 'false');
@@ -847,8 +932,10 @@ function medianReferenceIndex(metric, targetIndex) {
 }
 
 function comparisonMetricMeta(metric) {
-  if (metric === 'D1_hip_ankle_rel') return { label: '깊이', detail: '골반–발목 세로거리' };
-  return { label: '무릎 간격', detail: '준비자세 대비 무릎 간격' };
+  if (metric === 'D1_hip_ankle_rel') {
+    return { label: '골반이 내려간 정도', detail: '100% − 골반–발목 세로거리', value: (raw) => 1 - raw };
+  }
+  return { label: '무릎 간격', detail: '준비자세 대비 무릎 간격', value: (raw) => raw };
 }
 
 async function renderComparison() {
@@ -863,13 +950,15 @@ async function renderComparison() {
   const target = state.result.per_rep[targetIndex];
   const reference = state.result.per_rep[referenceIndex];
   const meta = comparisonMetricMeta(metric);
+  const targetValue = finite(target[metric]) ? meta.value(target[metric]) : null;
+  const referenceValue = finite(reference[metric]) ? meta.value(reference[metric]) : null;
   $('#compare-card').innerHTML = `
     <div class="compare-heading"><div><p class="card-label">회차 비교</p><h3>나란히 비교</h3></div><p>기준은 ${escapeHtml(meta.detail)}이 세트 중앙값에 가장 가까운 회차입니다.</p></div>
     <div class="compare-grid">
-      <div class="compare-item compare-shot selected"><small>선택 · ${targetIndex + 1}회차 저점</small><canvas id="compare-target"></canvas><strong>${meta.label} ${repUsable(targetIndex) ? percent(target[metric]) : '확인 어려움'}</strong></div>
-      <div class="compare-item compare-shot"><small>평소 · ${referenceIndex + 1}회차 저점</small><canvas id="compare-reference"></canvas><strong>${meta.label} ${percent(reference[metric])}</strong></div>
+      <div class="compare-item compare-shot selected"><small>선택 · ${targetIndex + 1}회차 저점</small><canvas id="compare-target"></canvas><strong>${meta.label} ${repUsable(targetIndex) ? percent(targetValue) : '확인 어려움'}</strong></div>
+      <div class="compare-item compare-shot"><small>평소 · ${referenceIndex + 1}회차 저점</small><canvas id="compare-reference"></canvas><strong>${meta.label} ${percent(referenceValue)}</strong></div>
     </div>
-    <p class="evidence-caption">${targetIndex + 1}회차 ${meta.label} ${repUsable(targetIndex) ? percent(target[metric]) : '확인 어려움'} · 평소(${referenceIndex + 1}회차) ${percent(reference[metric])}</p>
+    <p class="evidence-caption">${targetIndex + 1}회차 ${meta.label} ${repUsable(targetIndex) ? percent(targetValue) : '확인 어려움'} · 평소(${referenceIndex + 1}회차) ${percent(referenceValue)}</p>
   `;
   await drawFrame($('#compare-target'), state.result.bottoms[targetIndex]);
   await drawFrame($('#compare-reference'), state.result.bottoms[referenceIndex]);
@@ -1138,6 +1227,7 @@ async function renderResults() {
   state.selectedRep = primaryEvidenceRep();
   state.comparisonMetric = primaryFeedback()?.metric || 'A2_knee_w_rel_stand';
   renderSummary();
+  renderRepCharts();
   renderRepOverview();
   renderFeedback();
   renderObservation(state.selectedRep);

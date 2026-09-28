@@ -228,6 +228,39 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .summary-chip small, .summary-chip strong { display: block; }
 .summary-chip small { color: var(--muted); font-size: 11px; }
 .summary-chip strong { margin-top: 17px; color: var(--ink); font-size: 20px; line-height: 1.25; letter-spacing: -.02em; }
+.rep-charts { margin: 0 0 20px; padding: 22px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.rep-charts-heading { margin-bottom: 18px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.rep-charts-heading h3 { margin: 0; color: var(--ink); font-size: 24px; letter-spacing: -.025em; }
+.rep-charts-heading > p { max-width: 410px; margin: 0; color: var(--muted); font-size: 11px; text-align: right; }
+.rep-chart-scroll { max-width: 100%; overflow-x: hidden; }
+.rep-chart-scroll.scrollable { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-gutter: stable; }
+.rep-chart-inner { min-width: 0; }
+.rep-bar-chart + .rep-bar-chart { margin-top: 25px; padding-top: 21px; border-top: 1px solid var(--line); }
+.rep-bar-chart-title { margin-bottom: 6px; display: flex; align-items: baseline; gap: 9px; }
+.rep-bar-chart-title h4 { margin: 0; color: var(--ink); font-size: 15px; }
+.rep-bar-chart-title span { color: var(--muted); font-size: 10px; }
+.rep-bar-stage { position: relative; height: 190px; padding-left: 22px; }
+.rep-bar-grid { position: absolute; inset: 0 0 0 22px; display: grid; gap: 5px; z-index: 2; }
+.rep-bar-button { min-width: 0; height: 190px; padding: 0 2px; display: grid; grid-template-rows: 17px 20px 128px 25px; color: var(--text); background: transparent; border: 0; border-bottom: 2px solid transparent; text-align: center; cursor: pointer; }
+.rep-bar-button:hover, .rep-bar-button.active { background: #f2f6f9; border-bottom-color: var(--blue); }
+.rep-bar-button:focus-visible { outline: 3px solid rgba(35,95,159,.23); outline-offset: -2px; }
+.rep-bar-tag { min-height: 15px; align-self: end; justify-self: center; padding: 2px 4px; color: transparent; border-radius: 3px; font-size: 8px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+.rep-bar-button strong { align-self: center; color: #667078; font-size: 9px; font-weight: 650; line-height: 1; }
+.rep-bar-space { height: 128px; display: flex; align-items: flex-end; justify-content: center; }
+.rep-bar-fill { width: min(70%, 22px); min-height: 2px; display: block; background: #cfd5d8; border: 1px solid #b6bec3; border-bottom: 0; border-radius: 2px 2px 0 0; }
+.rep-bar-button small { padding-top: 6px; color: #69737a; font-size: 9px; font-weight: 650; line-height: 1; }
+.rep-bar-button.flagged .rep-bar-tag { color: #fff; background: var(--blue); }
+.rep-bar-button.flagged strong { color: var(--blue-dark); font-weight: 820; }
+.rep-bar-button.flagged .rep-bar-fill { width: min(84%, 27px); background: var(--blue); border: 2px solid var(--blue-dark); border-bottom: 0; }
+.rep-bar-button.early .rep-bar-tag { color: #fff; background: #59646c; }
+.rep-bar-button.early strong { color: #3f494f; font-weight: 760; }
+.rep-bar-button.early .rep-bar-fill { width: min(80%, 25px); background: #65717a; border: 2px solid #3f494f; border-bottom: 0; }
+.rep-bar-button.excluded .rep-bar-tag { color: #5f676c; background: #e0e3e4; }
+.rep-bar-button.excluded strong { color: #7a8287; }
+.rep-chart-zero { position: absolute; left: 0; bottom: 19px; color: #7b858b; font-size: 8px; line-height: 1; }
+.rep-chart-median { position: absolute; left: 22px; right: 0; z-index: 1; border-top: 1px dashed #6d777e; }
+.rep-chart-median em { position: absolute; right: 0; bottom: 3px; padding: 2px 4px; color: #505a60; background: rgba(255,255,255,.9); font-size: 8px; font-style: normal; font-weight: 700; line-height: 1; }
+.rep-chart-caption { margin: 18px 0 0; padding: 12px 14px; color: #4f5e68; background: var(--blue-pale); border-left: 3px solid #8db0ce; font-size: 12px; }
 .rep-overview { margin: 0 0 20px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .rep-overview-heading { margin-bottom: 16px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
 .rep-overview-heading h3 { margin: 0; color: var(--ink); font-size: 24px; letter-spacing: -.025em; }
@@ -409,6 +442,13 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
   .summary-chip { min-height: auto; border-top: 1px solid var(--line); border-left: 0; }
   .summary-chip:first-child { border-top: 0; }
   .rep-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rep-charts { padding: 16px; }
+  .rep-charts-heading { align-items: start; flex-direction: column; gap: 6px; }
+  .rep-charts-heading > p { text-align: left; }
+  .rep-bar-grid { gap: 2px; }
+  .rep-bar-button { padding-inline: 0; }
+  .rep-bar-tag { padding-inline: 1px; font-size: 6.5px; }
+  .rep-bar-button strong, .rep-bar-button small { font-size: 7.5px; }
   .rep-overview { padding: 16px; }
   .rep-overview-heading, .compare-heading { align-items: start; flex-direction: column; gap: 6px; }
   .rep-overview-heading > p, .compare-heading > p { text-align: left; }
