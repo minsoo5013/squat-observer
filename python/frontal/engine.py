@@ -156,7 +156,7 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
         if bots and len(collapsed) / len(bots) >= _qc.COLLAPSE_FRAC_ERROR:
             warnings.append(_qc.warn("TRACKING_COLLAPSE", "error",
                                      "여러 반복에서 다리 관절이 겹쳐 잡혀 이 영상은 결과를 내지 않습니다. "
-                                     "밝은 곳에서, 다리 윤곽이 보이는 옷으로 다시 촬영해 주세요.",
+                                     "창문이나 조명을 등지지 말고, 다리 윤곽이 보이게 다시 촬영해 주세요.",
                                      reps=[i + 1 for i in collapsed]))
         for d, u in zip(per_rep, usable):
             d["usable"] = bool(u)

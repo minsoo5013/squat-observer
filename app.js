@@ -13,6 +13,7 @@ const state = {
   frames: null,
   result: null,
   analysisFps: 30,
+  analysisElapsedSeconds: null,
   frameWidth: 0,
   frameHeight: 0,
   selectedRep: 0,
@@ -545,6 +546,7 @@ json.dumps(payload, ensure_ascii=False)
 }
 
 async function analyzeVideo() {
+  const startedAt = performance.now();
   showAnalysis('영상을 준비하고 있습니다.', '브라우저가 재생할 수 있는 형식인지 확인했습니다.', 4, '분석 준비 중');
   state.frames = await extractLandmarks();
   showAnalysis('반복별 값을 계산하고 있습니다.', '처음 2초의 준비자세를 기준으로 비교합니다.', 90, '마무리 계산 중');
@@ -554,6 +556,7 @@ async function analyzeVideo() {
   state.comparison = state.retrySession
     ? await compareSets(state.retrySession.previous, state.result, state.retrySession.targets)
     : null;
+  state.analysisElapsedSeconds = (performance.now() - startedAt) / 1000;
   await renderResults();
 }
 
@@ -956,6 +959,7 @@ function renderTechnical() {
   const tracking = state.result.qc || {};
   $('#technical-content').innerHTML = `
     <p><strong>입력:</strong> ${escapeHtml(state.sourceName)} · ${state.analysisFps}fps로 분석 · ${state.result.n_frames}프레임</p>
+    <p><strong>기기 내 분석 시간:</strong> ${finite(state.analysisElapsedSeconds) ? `${state.analysisElapsedSeconds.toFixed(1)}초` : '확인 어려움'} · MediaPipe Lite · 최대 960px</p>
     <p><strong>준비자세:</strong> ${standingLabel()}</p>
     <p><strong>미검출 보완:</strong> ${gap.n_frames_interpolated ?? 0}프레임 · 가장 긴 연속 공백 ${gap.longest_gap_frames ?? 0}프레임</p>
     <p><strong>촬영 기록:</strong> 화면 점유율 ${finite(qc.frame_fill_ratio) ? qc.frame_fill_ratio.toFixed(2) : '확인 어려움'} · 좌우 방향 표기 ${qc.side_labels_usable ? '사용 가능' : '사용하지 않음'}</p>
@@ -1006,6 +1010,7 @@ function restart({ preserveRetry = false } = {}) {
   state.sourceKind = null;
   state.frames = null;
   state.result = null;
+  state.analysisElapsedSeconds = null;
   state.comparison = null;
   if (!preserveRetry) {
     state.retrySession = null;
@@ -1027,7 +1032,7 @@ function restart({ preserveRetry = false } = {}) {
     ? '같은 촬영 조건으로 한 세트를 더 진행하세요.'
     : '분석할 스쿼트 영상을 준비해 주세요.';
   $('#capture-deck').textContent = preserveRetry
-    ? '직전 세트와 같은 거리·방향을 유지하고, 준비자세 2초부터 시작합니다.'
+    ? '첫 세트와 같은 폰 위치, 같은 발 위치·발 간격을 유지하고 준비자세 2초부터 시작합니다.'
     : '모바일은 갤러리에서 영상을 선택하고, 데스크톱은 촬영하거나 파일을 선택할 수 있습니다.';
   setHidden($('#retry-position-note'), !preserveRetry);
   updateStep(1);
