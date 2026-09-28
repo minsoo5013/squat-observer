@@ -119,3 +119,27 @@ def rep_geometry_ok(P, bottoms, stand_window):
         ok = bool(order_ok and np.isfinite(hr) and HIP_RATIO_MIN <= hr <= HIP_RATIO_MAX)
         out.append((ok, float(hr), bool(order_ok)))
     return out
+
+
+# run56 — C1(정면 상체 길이) 표시 조건 (SERVICE_ANALYSIS_SPEC 2-3: 어깨 가시성 QC 통과 시에만 출력).
+#   새 임계는 없다: 어깨가 '관측됨' = 가시성 ≥ landmarks.DEFAULT_MIN_VISIBILITY(0.5, 이 값 미만은 이미 NaN 처리),
+#   저점 범위 = BOTTOM_GUARD_S(핵심 관절과 같은 ±0.1 s). 기준자세는 창의 절반 이상에서 관측돼야
+#   중앙값이 실제 관측값에서 나온다(중앙값의 붕괴점).
+SHOULDERS = ["Left Shoulder", "Right Shoulder"]
+
+
+def shoulder_missing(P):
+    """보간 전 좌표에서 두 어깨 중 하나라도 관측되지 않은(가시성 미달·미검출) 프레임."""
+    idx = [L.IDX[n] for n in SHOULDERS]
+    return ~np.isfinite(P[:, idx, :]).all(axis=(1, 2))
+
+
+def c1_visible(sh_missing, bottoms, stand_window, fps, guard_s=BOTTOM_GUARD_S):
+    """반환 (기준자세 어깨 관측 여부, [반복별 저점 ±guard 어깨 관측 여부])."""
+    T = len(sh_missing)
+    a, b = stand_window
+    seg = sh_missing[max(0, int(a)):min(T, int(b))]
+    stand_ok = bool(len(seg) > 0 and (~seg).mean() > 0.5)
+    g = max(0, int(round(guard_s * fps)))
+    reps = [not bool(sh_missing[max(0, int(t) - g):min(T, int(t) + g + 1)].any()) for t in bottoms]
+    return stand_ok, reps

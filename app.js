@@ -1025,10 +1025,10 @@ function restart({ preserveRetry = false } = {}) {
   cameraButton.textContent = '카메라 켜기';
   $('#capture-title').textContent = preserveRetry
     ? '같은 촬영 조건으로 한 세트를 더 진행하세요.'
-    : '측정 조건을 먼저 맞춰주세요.';
+    : '분석할 스쿼트 영상을 준비해 주세요.';
   $('#capture-deck').textContent = preserveRetry
     ? '직전 세트와 같은 거리·방향을 유지하고, 준비자세 2초부터 시작합니다.'
-    : '휴대폰을 정면에 고정하고, 머리부터 발끝까지 한 화면에 담습니다.';
+    : '모바일은 갤러리에서 영상을 선택하고, 데스크톱은 촬영하거나 파일을 선택할 수 있습니다.';
   setHidden($('#retry-position-note'), !preserveRetry);
   updateStep(1);
   $('#capture-section').scrollIntoView({ behavior: 'smooth', block: 'start' });

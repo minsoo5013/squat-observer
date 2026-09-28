@@ -30,6 +30,10 @@ MIN_REPS = 3
 # run44 eval_view_change.json — 같은 카메라 앞/뒤 절반 최대 0.113, 0°↔±40° 최소 0.131 → 사이값.
 # 이 값으로는 40° 안팎의 큰 변화만 잡힌다 (15° 회전은 비율 3 % 로 잡음 안에 묻힘).
 VIEW_CHANGE_REL = 0.12
+# run52 — 발 간격(서기 발목폭/몸길이) 변화: 주의 표시만(비교는 한다).
+#   민수 Session 1: 발 간격 10 % 넓을 때 A2 ≈ −0.10 (r −0.59) → 허용폭(0.089) 수준. A1 은 발 간격과 무관(r 0.07).
+#   OpenCap 같은 영상 안 자연 변동 최대 1.5 %(0°)·3.8 %(±40°). → 8 % (A2 예상 변화 ≈ 0.08) 에서 주의. 잠정.
+STANCE_CHANGE_REL = 0.08
 
 LABEL = {                       # 사용자 문구용 이름 (판정어 없음)
     "A1_knee_ankle_w": "발목 간격 대비 무릎 간격",
@@ -76,6 +80,11 @@ def compare(prev, new, key, better, floor=None, se_mult=SE_MULT, min_reps=MIN_RE
     out["view_change_rel"] = vc
     if vc is not None and vc > VIEW_CHANGE_REL:
         out["cautions"].append("두 세트의 촬영 방향이 달라 보여 비교가 덜 정확할 수 있습니다")
+    sc = stance_change(prev, new)
+    out["stance_change_rel"] = sc
+    out["stance_changed"] = bool(sc is not None and sc > STANCE_CHANGE_REL)
+    if out["stance_changed"]:
+        out["cautions"].append("발 간격이 직전 세트와 달라 직접 비교에 주의가 필요합니다")
     ma, mb = float(np.median(a)), float(np.median(b))
     sa, sb = _robust_sd(a), _robust_sd(b)
     se = float(np.sqrt(sa ** 2 / len(a) + sb ** 2 / len(b)))
@@ -133,6 +142,18 @@ def compare_with_consistency(prev, new, key, better, checks, min_reps=MIN_REPS):
         r.setdefault("cautions", []).append(
             "무릎 간격과 무릎 안쪽 이동의 방향이 엇갈려 변화로 보지 않았습니다")
     return r
+
+
+def stance_change(prev, new):
+    """서기 발목폭/몸길이 의 상대 변화 (발 간격이 달라졌는가)."""
+    def g(r, k):
+        return r[k] if isinstance(r, dict) else getattr(r, k)
+    try:
+        ra, rb = prev["standing"], new["standing"]
+        v = abs((g(rb, "ankle_w") / g(rb, "span_sh_ank")) / (g(ra, "ankle_w") / g(ra, "span_sh_ank")) - 1.0)
+        return float(v) if np.isfinite(v) else None
+    except (KeyError, AttributeError, ZeroDivisionError, TypeError):
+        return None
 
 
 def compare_many(prev, new, targets):

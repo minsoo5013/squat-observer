@@ -67,6 +67,7 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
             Pj[jumps] = np.nan
             seq = seq._replace(P=Pj)
         missing = _qc.core_missing(seq.P)
+        sh_missing = _qc.shoulder_missing(seq.P)      # run56 — C1 표시 조건용 (보간 전)
         long_gap, gap_runs = _qc.long_gap_mask(missing, fps)
         qc_info = {"jump_frames": int(jumps.sum()), "jump_frac": float(jumps.mean()),
                    "jump_max_dev_ratio": jinfo.get("max_dev_ratio"),
@@ -163,6 +164,20 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
                 for k, v in list(d.items()):
                     if isinstance(v, (float, np.floating)):
                         d[k] = float("nan")
+        # run56 — 어깨가 관측되지 않았으면 C1(정면 상체 길이)만 비운다. 다른 지표는 어깨를 쓰지 않아 그대로.
+        c1_stand_ok, c1_rep_ok = _qc.c1_visible(sh_missing, bots, ref.window, fps)
+        c1_hidden = [i + 1 for i, ok in enumerate(c1_rep_ok) if not (ok and c1_stand_ok) and usable[i]]
+        for i, d in enumerate(per_rep):
+            if not (c1_stand_ok and c1_rep_ok[i]):
+                d["C1_trunk_span_rel"] = float("nan")
+        qc_info["c1_standing_shoulders_ok"] = c1_stand_ok
+        qc_info["c1_hidden_reps"] = c1_hidden
+        if c1_hidden:
+            warnings.append(_qc.warn("TRUNK_NOT_SHOWN", "info",
+                                     ("준비자세에서 어깨가 잘 보이지 않아 상체 길이는 표시하지 않았습니다."
+                                      if not c1_stand_ok else
+                                      f"{len(c1_hidden)}회는 가장 낮은 자세에서 어깨가 가려져 상체 길이를 표시하지 않았습니다."),
+                                     reps=c1_hidden))
         n_bad = int(len(usable) - sum(usable))
         if len(bots) == 0:
             warnings.append(_qc.warn("NO_REPS", "error",
