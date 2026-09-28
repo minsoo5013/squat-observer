@@ -1201,6 +1201,7 @@ function renderTechnical() {
     <p><strong>추적 기록:</strong> 관절 튐 제외 ${tracking.jump_frames ?? 0}프레임 · 핵심 관절 미검출 비율 ${finite(tracking.core_missing_frac) ? `${Math.round(tracking.core_missing_frac * 100)}%` : '확인 어려움'}</p>
     ${warnings.length ? `<p><strong>안내 기록:</strong> ${warnings.map((warning) => escapeHtml(`${warning.code}: ${warning.message}`)).join(' ')}</p>` : ''}
     <p><strong>해석 범위:</strong> 정면 영상에 보이는 같은 세트 안의 반복 변화만 관찰하며, 변화의 원인·의학적 상태·실제 3D 관절각은 판단하지 않습니다.</p>
+    <p><strong>안전 안내:</strong> 개인의 체력 수준에 맞춰 무리하지 않는 범위에서 수행하고, 필요한 경우 안전한 환경과 지지물을 확보하세요.</p>
     <p>촬영 품질 합격선과 연속 영상의 반복 병합 간격은 아직 확정되지 않았습니다. URL의 <code>adjMerge</code> 값이 제공된 경우에만 명시값을 사용합니다.</p>
   `;
 }
