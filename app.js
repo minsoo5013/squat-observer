@@ -124,7 +124,11 @@ function showAnalysis(title, detail, progress = 4, count = '') {
 }
 
 function showAnalysisError(error) {
-  const message = error instanceof Error ? error.message : String(error);
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  console.error(error);
+  const message = /Traceback|PythonError|\/pyodide\//i.test(rawMessage)
+    ? '영상 분석 계산 중 오류가 발생했습니다. 같은 영상을 다시 선택해 주세요. 문제가 반복되면 이 화면을 캡처해 알려 주세요.'
+    : rawMessage;
   showAnalysis('분석을 마치지 못했습니다.', message, 100);
   document.querySelector('.analysis-retry')?.remove();
   $('#analysis-detail').insertAdjacentHTML(
@@ -430,7 +434,9 @@ async function runEngine(calibration) {
     height: state.frameHeight,
     fps: state.analysisFps,
     calibration,
-    adj_merge: requestedAdjMerge(),
+    // Pyodide 0.28 may expose JavaScript null as JsNull rather than Python None.
+    // Zero is not a valid adjMerge query value, so it is safe as the unset sentinel.
+    adj_merge: requestedAdjMerge() ?? 0,
   };
   const proxy = pyodide.toPy(payload);
   pyodide.globals.set('WEB_INPUT', proxy);
@@ -462,8 +468,8 @@ def clean(value):
 
 cal_raw = WEB_INPUT['calibration']
 calibration = None if cal_raw is None else tuple(float(x) for x in cal_raw)
-adj_raw = WEB_INPUT['adj_merge']
-adj_merge = None if adj_raw is None else int(adj_raw)
+adj_raw = int(WEB_INPUT['adj_merge'])
+adj_merge = None if adj_raw == 0 else adj_raw
 result = engine.analyze_mediapipe(
     WEB_INPUT['frames'], int(WEB_INPUT['width']), int(WEB_INPUT['height']),
     float(WEB_INPUT['fps']), mirrored=None, adj_merge=adj_merge,
