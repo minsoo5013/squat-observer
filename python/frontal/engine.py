@@ -33,6 +33,8 @@ from frontal import signals as _sig            # noqa: E402
 from frontal import standing as _stand         # noqa: E402
 
 # 3D 트랙 전용 — 정면 입력으로 절대 부르면 안 되는 것들 (adapter.py 설계규칙 2 참조)
+EARLY_SEARCH_S = 5.0     # run51: 캘리브레이션 실패 시 먼저 이 시간 안에서 서기 구간을 찾는다 (잠정)
+
 FORBIDDEN_FOR_FRONTAL = (
     "squat_core.compute_gate_features", "squat_core.evaluate_gate",
     "squat_core.GATE_V2", "squat_core.analyze_set",
@@ -104,9 +106,21 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
             # run43 — 가운데 한 프레임 대신 구간 중앙값 (서기 중 무릎폭 프레임 떨림 3~20 %, OpenCap 정면)
             ref = _stand._measure_window(P, ref.window, "calibration", ref.seconds_held, "high")
         else:
-            # run43 — 지정 구간이 흔들렸거나 가려졌으면 영상 전체에서 서 있는 구간을 찾는다
-            alt = _stand.search_standing(P, fps, bad_mask=missing)
+            # run51 — 먼저 영상 앞부분(EARLY_SEARCH_S)에서 서 있는 구간을 찾는다 (세트 시작 전 자기 상태가 기준).
+            #   Session 1: 11개 중 10개가 앞 0~2 s 에서 실패 — 녹화 누른 직후 자리 잡는 움직임(앞 0.5 s 변동 0.02~0.05 span)
+            #   이나 2 s 전에 시작. 하지만 그중 대부분은 앞 5 s 안에 조용한 0.5~1 s 가 있었다.
+            early = missing.copy()
+            early[int(round(EARLY_SEARCH_S * fps)):] = True
+            alt = _stand.search_standing(P, fps, bad_mask=early, seconds=(1.0, 0.5))
             if alt.reliability != "failed":
+                from dataclasses import replace as _dc_replace
+                alt = _dc_replace(alt, method=alt.method.replace("search:", "early_search:"))
+            else:
+                # run43 — 앞부분에도 없으면 영상 전체에서 서 있는 구간을 찾는다
+                alt = _stand.search_standing(P, fps, bad_mask=missing)
+            if alt.reliability != "failed" and alt.method.startswith("early_search:"):
+                ref = alt
+            elif alt.reliability != "failed":
                 warnings.append(_qc.warn(
                     "STANDING_CALIBRATION_FALLBACK", "info",
                     "앞부분에서 가만히 선 자세를 찾지 못해, 영상 중 서 있는 구간을 기준으로 썼습니다.",
@@ -132,6 +146,17 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
     usable = None
     if continuous:
         usable = _qc.rep_usable(bots, long_gap, fps)
+        # run50 — 저점 관절 붕괴(좌우 다리 겹침) 반복도 값으로 쓰지 않는다
+        geo = _qc.rep_geometry_ok(P, bots, ref.window)
+        collapsed = [i for i, (ok, _, _) in enumerate(geo) if not ok]
+        usable = [u and g[0] for u, g in zip(usable, geo)]
+        qc_info["collapsed_reps"] = [i + 1 for i in collapsed]
+        qc_info["hip_ratio_at_bottoms"] = [round(g[1], 3) for g in geo]
+        if bots and len(collapsed) / len(bots) >= _qc.COLLAPSE_FRAC_ERROR:
+            warnings.append(_qc.warn("TRACKING_COLLAPSE", "error",
+                                     "여러 반복에서 다리 관절이 겹쳐 잡혀 이 영상은 결과를 내지 않습니다. "
+                                     "밝은 곳에서, 다리 윤곽이 보이는 옷으로 다시 촬영해 주세요.",
+                                     reps=[i + 1 for i in collapsed]))
         for d, u in zip(per_rep, usable):
             d["usable"] = bool(u)
             if not u:      # 긴 공백을 보간한 값은 지표로 쓰지 않는다
@@ -147,7 +172,7 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
                                      "모든 반복의 가장 낮은 자세에서 몸이 가려져 값을 낼 수 없습니다."))
         elif n_bad:
             warnings.append(_qc.warn("REPS_EXCLUDED", "warn",
-                                     f"{n_bad}회는 가장 낮은 자세에서 몸이 가려져 값에서 뺐습니다.",
+                                     f"{n_bad}회는 가장 낮은 자세에서 몸이 가려졌거나 관절 인식이 흔들려 값에서 뺐습니다.",
                                      reps=[i + 1 for i, u in enumerate(usable) if not u]))
     setv = _feat.set_features(P, Pr, ref)
 

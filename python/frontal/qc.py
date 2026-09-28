@@ -95,3 +95,27 @@ def warn(code, severity, message, **extra):
     d = {"code": code, "severity": severity, "message": message}
     d.update(extra)
     return d
+
+
+# ── run50: 저점 관절 붕괴 (좌우 다리가 한쪽으로 겹쳐 잡힘) ─────────────────────
+# 실제 개발 촬영(검정 바지·역광, IMG_7595)에서 저점 3/8 이 붕괴했는데 튐 검사로는 안 잡혔다(여러 프레임 지속).
+# 정면에서 골반폭은 스쿼트 중 거의 변하지 않는다: OpenCap 0°·±40° 133 저점에서 저점/서기 골반폭 0.80~1.12, 좌우 순서 항상 일치.
+HIP_RATIO_MIN, HIP_RATIO_MAX = 0.70, 1.43     # 잠정 — 위 분포 밖으로 여유
+COLLAPSE_FRAC_ERROR = 0.25                    # 세트의 이 비율 이상이 붕괴면 추적 자체를 믿지 않는다
+
+
+def rep_geometry_ok(P, bottoms, stand_window):
+    """저점마다 (골반폭비, 좌우 순서 일치) 로 붕괴 여부. 반환 [(ok, hip_ratio, order_ok)]."""
+    a, b = stand_window
+    li, ri = L.IDX["Left Hip"], L.IDX["Right Hip"]
+    with np.errstate(all="ignore"):
+        hw_s = float(np.nanmedian(np.abs(P[a:b, ri, 0] - P[a:b, li, 0])))
+    out = []
+    for t in bottoms:
+        t = int(t)
+        s = [np.sign(P[t, L.IDX[f"Right {j}"], 0] - P[t, L.IDX[f"Left {j}"], 0]) for j in ("Hip", "Knee", "Ankle")]
+        order_ok = len(set(s)) == 1 and s[0] != 0
+        hr = abs(P[t, ri, 0] - P[t, li, 0]) / hw_s if np.isfinite(hw_s) and hw_s > 1e-6 else float("nan")
+        ok = bool(order_ok and np.isfinite(hr) and HIP_RATIO_MIN <= hr <= HIP_RATIO_MAX)
+        out.append((ok, float(hr), bool(order_ok)))
+    return out

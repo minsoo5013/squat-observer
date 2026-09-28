@@ -26,6 +26,12 @@ REP_MULT = 3.0          # 한 반복 이탈 허용폭의 흔들림 배수
 FLOOR_LATE = {A2: 0.089, A45: 0.031, D1: 0.031}   # = compare_sets.FLOOR (세트 간 잡음 p90)
 FLOOR_REP = {A2: 0.19, D1: 0.06}                  # 0° 정상 수행 한 반복 최대 이탈 p90 (A2 0.187, D1 0.057)
 
+# run50 — 깊이와 무릎 간격의 결합: 얕게 앉으면 무릎 간격(A2)도 자연히 줄어든다.
+# 개발 촬영(민수 Session 1) '얕게' 영상 2개에서 무릎은 그대로 두고 깊이만 바꿨는데 KNEE_LATE 가 함께 걸렸다
+# (D1 +0.17~0.24 일 때 A2 −0.2 안팎, 기울기 약 −0.9~−1.2). → 깊이 변화로 설명되는 만큼은 무릎 변화로 보지 않는다.
+LATE_STRONG = 2.0       # 후반 경향을 한 반복보다 먼저 보여줄 세기(허용폭 배수). 잠정
+DEPTH_COUPLING = 1.5    # A2 감소 허용 = 1.5 × (그 반복들이 더 얕아진 D1 양). 관측 기울기보다 보수적. 잠정
+
 PRIORITY = ["KNEE_LATE", "KNEE_REP", "DEPTH_LATE", "DEPTH_REP"]   # 화면에는 한 가지 포인트(첫 번째)
 CONTENT = {"KNEE_LATE": "knee_width_decrease", "KNEE_REP": "knee_width_decrease",
            "DEPTH_LATE": "relative_shallow_rep", "DEPTH_REP": "relative_shallow_rep"}
@@ -36,20 +42,20 @@ def _rsd(v):
     return float(1.4826 * np.median(np.abs(v - np.median(v)))) if len(v) >= 2 else float("nan")
 
 
-def _vals(result, key):
+def _vals(result, key, exclude=()):
     per = result.get("per_rep") or []
     use = result.get("reps_usable") or [True] * len(per)
     idx, v = [], []
     for i, (d, u) in enumerate(zip(per, use)):
         x = d.get(key)
-        if u and x is not None and np.isfinite(float(x)):
+        if u and (i + 1) not in exclude and x is not None and np.isfinite(float(x)):
             idx.append(i); v.append(float(x))
     return np.array(idx, int), np.array(v, float)
 
 
-def _late_vs_early(result, key, sign):
-    """sign=-1: 값이 작아지면 발동(A2), +1: 커지면 발동(A45·D1)."""
-    idx, v = _vals(result, key)
+def _late_vs_early(result, key, sign, exclude=()):
+    """sign=-1: 값이 작아지면 발동(A2), +1: 커지면 발동(A45·D1). exclude = 뺄 회차(1부터)."""
+    idx, v = _vals(result, key, exclude)
     n = len(v)
     if n < MIN_REPS:
         return None
@@ -82,30 +88,55 @@ def evaluate(result):
     if result.get("result_usable") is False:
         return []
     out = []
-    kl, ka = _late_vs_early(result, A2, -1), _late_vs_early(result, A45, +1)
+    # run50: 한 반복만 튄 경우(REP)가 '후반 경향'(LATE)으로도 잡히지 않게, LATE 는 REP 로 잡힌 반복을 빼고 본다
+    kr = _rep_outlier(result, A2, -1)
+    if kr and kr["fired"]:                                  # 그 반복이 더 얕았던 만큼은 빼고 본다
+        idx, dv = _vals(result, D1)
+        if kr["rep"] - 1 in idx.tolist():
+            j = idx.tolist().index(kr["rep"] - 1)
+            d1_dev = float(dv[j] - np.median(np.delete(dv, j))) if len(dv) >= 2 else 0.0
+            kr["depth_explained"] = DEPTH_COUPLING * max(0.0, d1_dev)
+            kr["fired"] = (-kr["delta"] - kr["depth_explained"]) > kr["band"]
+    dr = _rep_outlier(result, D1, +1)
+    k_ex = (kr["rep"],) if kr and kr["fired"] else ()
+    d_ex = (dr["rep"],) if dr and dr["fired"] else ()
+    kl, ka = _late_vs_early(result, A2, -1, k_ex), _late_vs_early(result, A45, +1, k_ex)
+    dl = _late_vs_early(result, D1, +1, d_ex)
+    dl_all = _late_vs_early(result, D1, +1, k_ex)
+    if kl and kl["fired"] and dl_all:                       # 얕아져서 줄어든 만큼은 빼고 본다
+        explained = DEPTH_COUPLING * max(0.0, dl_all["delta"])
+        kl["depth_explained"] = explained
+        kl["fired"] = (-kl["delta"] - explained) > kl["band"]
     if kl and ka and kl["fired"] and ka["fired"]:          # A2·A45 가 같은 방향일 때만 (둘은 같은 정보의 다른 표현)
         out.append({"rule_id": "KNEE_LATE", "metric": A2, "better": "higher", "reps": kl["late_reps"],
                     "evidence": {"A2": kl, "A45": ka},
                     "text": (f"후반 반복({', '.join(map(str, kl['late_reps']))}회차)에서 무릎 간격이 초반보다 좁아지는 경향이 보였습니다 "
                              f"(준비자세 대비 {kl['early']:.2f} → {kl['late']:.2f}).")})
-    kr = _rep_outlier(result, A2, -1)
     if kr and kr["fired"]:
         out.append({"rule_id": "KNEE_REP", "metric": A2, "better": "higher", "reps": [kr["rep"]], "evidence": kr,
                     "text": (f"{kr['rep']}회차에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다 "
                              f"(준비자세 대비 {kr['value']:.2f}, 다른 반복 {kr['others']:.2f}).")})
-    dl = _late_vs_early(result, D1, +1)
     if dl and dl["fired"]:
         out.append({"rule_id": "DEPTH_LATE", "metric": D1, "better": "lower", "reps": dl["late_reps"], "evidence": dl,
                     "text": (f"후반 반복({', '.join(map(str, dl['late_reps']))}회차)이 초반보다 얕아지는 경향이 보였습니다 "
                              f"(가장 낮은 자세의 골반 높이 {dl['early']:.2f} → {dl['late']:.2f}).")})
-    dr = _rep_outlier(result, D1, +1)
     if dr and dr["fired"]:
         out.append({"rule_id": "DEPTH_REP", "metric": D1, "better": "lower", "reps": [dr["rep"]], "evidence": dr,
                     "text": (f"{dr['rep']}회차가 다른 반복보다 눈에 띄게 얕았습니다 "
                              f"(골반 높이 {dr['value']:.2f}, 다른 반복 {dr['others']:.2f}).")})
     for f in out:
         f["content_group"] = CONTENT[f["rule_id"]]
-    out.sort(key=lambda f: PRIORITY.index(f["rule_id"]))
+        ev = f["evidence"]["A2"] if f["rule_id"] == "KNEE_LATE" else f["evidence"]
+        f["strength"] = round((abs(ev["delta"]) - ev.get("depth_explained", 0.0)) / ev["band"], 2)   # 허용폭의 몇 배인가
+    # run50: 무릎 > 깊이 순은 유지. 같은 계열 안에서는
+    #   후반 경향(LATE)이 허용폭의 LATE_STRONG 배 이상이면 LATE 먼저 (점점 변함), 아니면 한 반복(REP) 먼저.
+    #   근거: Session 1 — 한 반복만 좁힘(7598): LATE 1.3배·REP 2.1배 / 점점 좁힘(7601): LATE 2.2배. 잠정(개발 영상 2개).
+    fam = lambda f: 0 if f["rule_id"].startswith("KNEE") else 1                         # noqa: E731
+    def rank(f):
+        if f["rule_id"].endswith("LATE"):
+            return 0 if f["strength"] >= LATE_STRONG else 2
+        return 1
+    out.sort(key=lambda f: (fam(f), rank(f), -f["strength"]))
     for i, f in enumerate(out):
         f["primary"] = i == 0
     return out
