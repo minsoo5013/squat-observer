@@ -25,7 +25,7 @@
         <div class="hero-actions">
           <button class="button button-primary desktop-capture-action" data-action="go-capture">촬영해서 분석하기</button>
           <button class="button button-quiet desktop-upload-action" data-action="open-upload">영상 파일 올리기</button>
-          <button class="button button-primary mobile-only mobile-upload-action" data-action="open-upload">갤러리 영상으로 분석하기</button>
+          <button class="button button-primary mobile-only mobile-upload-action" data-action="open-upload">영상 선택 또는 촬영하기</button>
           <button class="button button-quiet" id="sample-button" hidden>샘플로 전체 흐름 보기</button>
         </div>
         <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
@@ -129,7 +129,7 @@
         <div>
           <p class="eyebrow">영상 입력</p>
           <h2 id="capture-title">분석할 스쿼트 영상을 준비해 주세요.</h2>
-          <p class="section-deck" id="capture-deck">모바일은 갤러리에서 영상을 선택하고, 데스크톱은 촬영하거나 파일을 선택할 수 있습니다.</p>
+          <p class="section-deck" id="capture-deck">모바일은 영상을 선택하거나 카메라로 바로 촬영하고, 데스크톱은 촬영하거나 파일을 선택할 수 있습니다.</p>
         </div>
         <ol class="stepper" aria-label="진행 단계">
           <li class="active"><span>1</span>촬영</li>
@@ -147,8 +147,8 @@
               <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
               <strong class="desktop-only">카메라 연결 대기</strong>
               <small class="desktop-only">연결하면 이 영역에 정면 영상이 표시됩니다.</small>
-              <strong class="mobile-only">갤러리 영상 대기</strong>
-              <small class="mobile-only">저장된 영상을 선택하면 이 영역에서 확인한 뒤 분석합니다.</small>
+              <strong class="mobile-only">영상 입력 대기</strong>
+              <small class="mobile-only">저장된 영상을 선택하거나 카메라로 촬영한 뒤 분석합니다.</small>
             </div>
             <div class="record-badge" id="record-badge" hidden><span></span> 녹화 중 <b id="record-time">00:00</b></div>
             <div class="countdown" id="countdown" hidden></div>
@@ -159,12 +159,12 @@
             <button class="button button-stop" id="stop-button" hidden>촬영 마치기</button>
             <label class="button button-primary file-button">
               <span class="desktop-only">영상 올리기</span>
-              <span class="mobile-only">갤러리에서 영상 선택</span>
+              <span class="mobile-only">영상 선택 또는 촬영하기</span>
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
           <p class="local-note">촬영 영상과 관절 좌표는 서버로 전송되지 않습니다.</p>
-          <p class="mobile-upload-note mobile-only" id="mobile-upload-note">모바일에서는 갤러리에 저장된 영상 선택만 제공합니다. 직접 촬영은 실기기 검증 후 지원할 예정입니다.</p>
+          <p class="mobile-upload-note mobile-only" id="mobile-upload-note">휴대폰 카메라로 바로 찍어도 됩니다. 촬영하거나 저장된 영상을 선택해 주세요.</p>
         </article>
 
         <aside class="guide-card">
@@ -213,6 +213,10 @@
           </div>
           <div class="rep-chart-scroll" id="rep-chart-scroll"><div class="rep-chart-inner" id="rep-chart-inner"></div></div>
           <p class="rep-chart-caption" id="rep-chart-caption"></p>
+          <details class="reference-charts" id="reference-charts" open>
+            <summary><span class="reference-badge">참고</span><strong>상체 숙임·반복 시간</strong><em>더 보기</em></summary>
+            <div class="reference-chart-scroll"><div class="rep-chart-inner" id="reference-chart-inner"></div></div>
+          </details>
         </section>
         <section class="rep-overview" aria-labelledby="rep-overview-title">
           <div class="rep-overview-heading">
@@ -285,6 +289,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20260928-safety-note"></script>
+  <script type="module" src="./app.js?v=20260929-result-language"></script>
 </body>
 </html>
