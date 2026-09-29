@@ -151,6 +151,10 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
         geo = _qc.rep_geometry_ok(P, bots, ref.window)
         collapsed = [i for i, (ok, _, _) in enumerate(geo) if not ok]
         usable = [u and g[0] for u, g in zip(usable, geo)]
+        # run62 (I146) — 정의상 불가능한 값(D1 ∉ (0,1))이 나온 반복은 값으로 쓰지 않는다
+        possible = _qc.rep_values_possible(per_rep)
+        qc_info["impossible_value_reps"] = [i + 1 for i, ok in enumerate(possible) if not ok]
+        usable = [u and ok for u, ok in zip(usable, possible)]
         qc_info["collapsed_reps"] = [i + 1 for i in collapsed]
         qc_info["hip_ratio_at_bottoms"] = [round(g[1], 3) for g in geo]
         if bots and len(collapsed) / len(bots) >= _qc.COLLAPSE_FRAC_ERROR:
@@ -185,6 +189,12 @@ def analyze_frontal(seq, fps=None, adj_merge=None, use_heel_for_roll=False,
         elif n_bad == len(usable):
             warnings.append(_qc.warn("ALL_REPS_UNUSABLE", "error",
                                      "모든 반복의 가장 낮은 자세에서 몸이 가려져 값을 낼 수 없습니다."))
+        elif len(usable) - n_bad < _qc.MIN_USABLE_REPS:
+            # run62 (I146) — 값을 쓸 수 있는 반복이 기존 최소 반복(4)보다 적으면 결과를 내지 않는다
+            warnings.append(_qc.warn("TOO_FEW_REPS", "error",
+                                     f"값을 확인할 수 있는 반복이 {len(usable) - n_bad}회뿐이라 결과를 내지 않습니다. "
+                                     "전신이 보이는 자리에서 2초 선 뒤 여러 번 반복해 주세요.",
+                                     reps_usable=int(len(usable) - n_bad)))
         elif n_bad:
             warnings.append(_qc.warn("REPS_EXCLUDED", "warn",
                                      f"{n_bad}회는 가장 낮은 자세에서 몸이 가려졌거나 관절 인식이 흔들려 값에서 뺐습니다.",

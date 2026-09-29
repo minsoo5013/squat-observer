@@ -25,7 +25,7 @@
         <div class="hero-actions">
           <button class="button button-primary desktop-capture-action" data-action="go-capture">촬영해서 분석하기</button>
           <button class="button button-quiet desktop-upload-action" data-action="open-upload">영상 파일 올리기</button>
-          <button class="button button-primary mobile-only mobile-upload-action" data-action="open-upload">영상 선택 또는 촬영하기</button>
+          <button class="button button-primary mobile-only mobile-upload-action" data-action="go-capture">혼자 촬영 시작하기</button>
           <button class="button button-quiet" id="sample-button" hidden>샘플로 전체 흐름 보기</button>
         </div>
         <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
@@ -138,6 +138,13 @@
         </ol>
       </div>
 
+      <div class="capture-modes" role="tablist" aria-label="촬영 방식 선택">
+        <button class="capture-mode active" role="tab" aria-selected="true" data-capture-mode="solo"><strong>혼자 촬영</strong><span>전면 · 자동 시작·종료</span><em>추천</em></button>
+        <button class="capture-mode" role="tab" aria-selected="false" data-capture-mode="assisted"><strong>다른 사람이 촬영</strong><span>전면·후면 · 수동 시작·종료</span></button>
+        <button class="capture-mode" role="tab" aria-selected="false" data-capture-mode="upload"><strong>기존 영상 업로드</strong><span>앞뒤 이동 장면을 잘라서 선택</span></button>
+      </div>
+      <p class="capture-mode-description" id="capture-mode-description">전면 카메라로 준비 상태를 확인한 뒤 자동으로 촬영을 시작하고 마칩니다.</p>
+
       <div class="capture-layout">
         <article class="camera-card">
           <div class="camera-stage" id="camera-stage">
@@ -145,26 +152,28 @@
             <canvas id="preview-overlay" aria-hidden="true"></canvas>
             <div class="camera-placeholder" id="camera-placeholder">
               <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-              <strong class="desktop-only">카메라 연결 대기</strong>
-              <small class="desktop-only">연결하면 이 영역에 정면 영상이 표시됩니다.</small>
-              <strong class="mobile-only">영상 입력 대기</strong>
-              <small class="mobile-only">저장된 영상을 선택하거나 카메라로 촬영한 뒤 분석합니다.</small>
+              <strong id="camera-placeholder-title">혼자 촬영 준비</strong>
+              <small id="camera-placeholder-detail">휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.</small>
             </div>
+            <div class="capture-status" id="capture-status" role="status" aria-live="polite" hidden></div>
             <div class="record-badge" id="record-badge" hidden><span></span> 녹화 중 <b id="record-time">00:00</b></div>
             <div class="countdown" id="countdown" hidden></div>
           </div>
           <div class="camera-controls">
-            <button class="button button-primary desktop-camera-control" id="camera-button">카메라 켜기</button>
-            <button class="button button-record" id="record-button" hidden>준비자세부터 녹화</button>
+            <button class="button button-primary" id="camera-button">전면 카메라 시작</button>
+            <label class="facing-control" id="facing-control" hidden><span>카메라</span><select id="facing-select"><option value="user">전면</option><option value="environment">후면</option></select></label>
+            <button class="button button-record" id="record-button" hidden>촬영 시작</button>
             <button class="button button-stop" id="stop-button" hidden>촬영 마치기</button>
-            <label class="button button-primary file-button">
+            <button class="button button-quiet sound-toggle" id="sound-toggle" type="button" aria-pressed="true">소리 안내 켜짐</button>
+            <label class="button button-primary file-button" id="file-button" hidden>
               <span class="desktop-only">영상 올리기</span>
-              <span class="mobile-only">영상 선택 또는 촬영하기</span>
+              <span class="mobile-only">기존 영상 선택하기</span>
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
           <p class="local-note">촬영 영상과 관절 좌표는 서버로 전송되지 않습니다.</p>
-          <p class="mobile-upload-note mobile-only" id="mobile-upload-note">휴대폰 카메라로 바로 찍어도 됩니다. 촬영하거나 저장된 영상을 선택해 주세요.</p>
+          <p class="capture-helper" id="capture-helper">준비 감지는 촬영 시작을 돕기 위한 기능이며 자세를 판정하지 않습니다.</p>
+          <p class="mobile-upload-note" id="mobile-upload-note" hidden>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p>
         </article>
 
         <aside class="guide-card">
@@ -173,7 +182,7 @@
           <ol class="instruction-list">
             <li><span>1</span><div><strong>전신을 화면 안에 두기</strong><small>발끝부터 머리까지 화면에 들어오게 한 뒤, 2초 가만히 서고 시작해 주세요.</small></div></li>
             <li><span>2</span><div><strong>등 뒤의 밝은 빛 피하기</strong><small>창문이나 밝은 조명을 등지고 서지 마세요. 뒤가 밝으면 다리 관절이 겹쳐 잡힐 수 있어요.</small></div></li>
-            <li><span>3</span><div><strong>평소처럼 한 세트</strong><small>가능하면 6회 이상을 권장하지만 필수 조건은 아닙니다.</small></div></li>
+            <li><span>3</span><div><strong>평소처럼 한 세트</strong><small>8회 권장 (최소 6회)</small></div></li>
           </ol>
           <div class="capture-reminders">
             <p>권장: 다리 윤곽이 배경과 구분되는 옷이면 더 정확해요.</p>
@@ -206,6 +215,7 @@
       </section>
       <div id="usable-result">
         <div class="result-summary" id="result-summary"></div>
+        <p class="low-rep-note" id="low-rep-note" hidden>6회 이상 하면 후반 변화까지 비교할 수 있습니다.</p>
         <section class="rep-charts" aria-labelledby="rep-charts-title">
           <div class="rep-charts-heading">
             <div><p class="card-label">반복별 변화</p><h3 id="rep-charts-title">회차별 막대그래프</h3></div>
@@ -289,6 +299,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20260929-retry-a1-evidence"></script>
+  <script type="module" src="./app.js?v=20260929-solo-auto-capture"></script>
 </body>
 </html>

@@ -26,6 +26,40 @@ const state = {
   comparison: null,
   samplePair: null,
   samplePhase: 0,
+  captureMode: 'solo',
+  facingMode: 'user',
+  capturePhase: 'idle',
+  captureStatusKey: null,
+  captureMonitorTimer: null,
+  captureMonitorActive: false,
+  captureMonitorBusy: false,
+  monitorCanvas: null,
+  monitorContext: null,
+  monitorFootSamples: [],
+  readinessReadySince: null,
+  lastReadiness: null,
+  countdownToken: 0,
+  poseTimestampMs: 0,
+  poseLandmarkerPromise: null,
+  audioEnabled: true,
+  audioContext: null,
+  wakeLock: null,
+  recordingStartedAt: null,
+  stoppingRecording: false,
+  analysisEndSeconds: null,
+  captureRecordMeta: null,
+  roughRepCount: 0,
+  inSquat: false,
+  standBaselineSamples: [],
+  standBaseline: null,
+  finishStandSince: null,
+  lastGoodCaptureSeconds: 0,
+  invalidExitSamples: 0,
+  cameraRequestedAt: null,
+  cameraReadyAt: null,
+  readinessCompletedAt: null,
+  countdownCancelCount: 0,
+  cameraSettings: null,
 };
 
 const video = $('#preview-video');
@@ -37,6 +71,13 @@ const fileInput = $('#video-file');
 const countdown = $('#countdown');
 const recordBadge = $('#record-badge');
 const recordTime = $('#record-time');
+const captureStatus = $('#capture-status');
+const cameraStage = $('#camera-stage');
+const previewOverlay = $('#preview-overlay');
+const facingControl = $('#facing-control');
+const facingSelect = $('#facing-select');
+const soundToggle = $('#sound-toggle');
+const fileButton = $('#file-button');
 
 const CONNECTIONS = [
   [11, 12], [11, 23], [12, 24], [23, 24],
@@ -45,6 +86,29 @@ const CONNECTIONS = [
 ];
 
 const MAX_VIDEO_SECONDS = 90;
+
+// 촬영 보조용 잠정값. run63의 한 영상에 맞추지 않도록 몸 높이·정지 범위를 넓게 두었다.
+// 자세 판정에는 사용하지 않으며 실기기 로그를 모은 뒤 별도로 재검토한다.
+const SOLO_CAPTURE_CONFIG = Object.freeze({
+  previewFps: 8,
+  edgeMargin: 0.06,
+  minVisibility: 0.65,
+  minBodyHeight: 0.42,
+  maxBodyHeight: 0.78,
+  footStableWindowMs: 1000,
+  footStableMaxMove: 0.018,
+  readyHoldMs: 800,
+  countdownSeconds: 3,
+  initialStandMs: 2000,
+  finishStandMs: 2000,
+  maxRecordingMs: MAX_VIDEO_SECONDS * 1000,
+  minAutoStopReps: 6,
+  minExitStopReps: 4,
+  squatEnterRatio: 0.80,
+  squatExitRatio: 0.90,
+  exitFootMove: 0.035,
+  invalidExitSamples: 2,
+});
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
@@ -149,10 +213,99 @@ function showAnalysisError(error) {
   $('.analysis-retry').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
 }
 
+function setCaptureStatus(key, message, { speak = false, metrics = null } = {}) {
+  const changed = state.captureStatusKey !== key;
+  if (changed) {
+    console.info('[solo-capture]', {
+      at: new Date().toISOString(),
+      from: state.captureStatusKey,
+      to: key,
+      metrics,
+    });
+    state.captureStatusKey = key;
+  }
+  state.capturePhase = key;
+  captureStatus.textContent = message;
+  setHidden(captureStatus, false);
+  if (changed && speak) speakCapture(message);
+}
+
+function hideCaptureStatus() {
+  state.captureStatusKey = null;
+  state.capturePhase = 'idle';
+  captureStatus.textContent = '';
+  setHidden(captureStatus, true);
+}
+
+async function ensureAudioReady() {
+  if (!state.audioEnabled) return;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  state.audioContext ||= new AudioContextClass();
+  if (state.audioContext.state === 'suspended') await state.audioContext.resume().catch(() => {});
+}
+
+function playCountdownBeep() {
+  if (!state.audioEnabled || !state.audioContext) return;
+  const context = state.audioContext;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.frequency.value = 880;
+  gain.gain.setValueAtTime(0.0001, context.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.16);
+  oscillator.connect(gain).connect(context.destination);
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.18);
+}
+
+function speakCapture(message) {
+  if (!state.audioEnabled || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(message);
+  utterance.lang = 'ko-KR';
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator) || state.wakeLock) return;
+  try {
+    state.wakeLock = await navigator.wakeLock.request('screen');
+    state.wakeLock.addEventListener('release', () => { state.wakeLock = null; }, { once: true });
+  } catch (_) {
+    // 지원하지 않거나 권한이 없으면 촬영은 그대로 진행한다.
+  }
+}
+
+async function releaseWakeLock() {
+  const lock = state.wakeLock;
+  state.wakeLock = null;
+  if (lock) await lock.release().catch(() => {});
+}
+
+function clearPreviewOverlay() {
+  const context = previewOverlay.getContext('2d');
+  context?.clearRect(0, 0, previewOverlay.width, previewOverlay.height);
+}
+
+function stopCaptureMonitor() {
+  state.captureMonitorActive = false;
+  state.captureMonitorBusy = false;
+  clearTimeout(state.captureMonitorTimer);
+  state.captureMonitorTimer = null;
+  state.countdownToken += 1;
+  setHidden(countdown, true);
+}
+
 function stopStream() {
+  stopCaptureMonitor();
   if (state.stream) state.stream.getTracks().forEach((track) => track.stop());
   state.stream = null;
   video.srcObject = null;
+  cameraStage.classList.remove('mirrored');
+  clearPreviewOverlay();
+  void releaseWakeLock();
 }
 
 function chooseRecorderMime() {
@@ -167,20 +320,65 @@ function chooseRecorderMime() {
   return choices.find((type) => MediaRecorder.isTypeSupported(type)) || '';
 }
 
+function selectCaptureMode(mode, { preserveStream = false } = {}) {
+  if (!['solo', 'assisted', 'upload'].includes(mode)) return;
+  if (state.recorder?.state === 'recording') return;
+  if (!preserveStream) stopStream();
+  state.captureMode = mode;
+  state.facingMode = mode === 'solo' ? 'user' : facingSelect.value;
+  document.querySelectorAll('[data-capture-mode]').forEach((button) => {
+    const active = button.dataset.captureMode === mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+  const descriptions = {
+    solo: '전면 카메라로 준비 상태를 확인한 뒤 자동으로 촬영을 시작하고 마칩니다.',
+    assisted: '촬영자가 전면 또는 후면 카메라를 고르고 시작·종료 버튼을 누릅니다.',
+    upload: '앞뒤로 걸어가거나 휴대폰을 만지는 부분을 잘라낸 기존 영상을 선택합니다.',
+  };
+  $('#capture-mode-description').textContent = descriptions[mode];
+  setHidden(cameraButton, mode === 'upload');
+  setHidden(facingControl, mode !== 'assisted');
+  setHidden(recordButton, true);
+  setHidden(stopButton, true);
+  setHidden(soundToggle, mode === 'upload');
+  setHidden(fileButton, mode !== 'upload');
+  setHidden($('#mobile-upload-note'), mode !== 'upload');
+  setHidden($('#capture-helper'), mode === 'upload');
+  setHidden(cameraPlaceholder, false);
+  hideCaptureStatus();
+  const placeholder = {
+    solo: ['혼자 촬영 준비', '휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.'],
+    assisted: ['촬영 준비', '카메라 방향을 고르고 촬영자가 시작해 주세요.'],
+    upload: ['기존 영상 선택', '앞뒤 이동 장면을 잘라낸 영상을 선택해 주세요.'],
+  }[mode];
+  $('#camera-placeholder-title').textContent = placeholder[0];
+  $('#camera-placeholder-detail').textContent = placeholder[1];
+  cameraButton.textContent = mode === 'solo' ? '전면 카메라 시작' : '카메라 켜기';
+}
+
 async function enableCamera() {
   cameraButton.disabled = true;
   try {
+    await ensureAudioReady();
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('이 브라우저에서는 카메라 촬영을 지원하지 않습니다. 저장된 영상을 선택해 주세요.');
     }
     stopStream();
+    state.cameraRequestedAt = performance.now();
+    state.cameraReadyAt = null;
+    state.readinessCompletedAt = null;
+    state.countdownCancelCount = 0;
+    state.cameraSettings = null;
+    const facingMode = state.captureMode === 'solo' ? 'user' : facingSelect.value;
+    state.facingMode = facingMode;
     state.stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: {
-        facingMode: 'user',
+        facingMode: { ideal: facingMode },
         width: { ideal: 1080 },
         height: { ideal: 1920 },
-        frameRate: { ideal: 30, max: 60 },
+        frameRate: { ideal: 30, max: 30 },
       },
     });
     video.removeAttribute('src');
@@ -188,26 +386,273 @@ async function enableCamera() {
     video.muted = true;
     video.playsInline = true;
     await video.play();
+    state.cameraReadyAt = performance.now();
+    state.cameraSettings = state.stream.getVideoTracks()[0]?.getSettings?.() || null;
+    cameraStage.classList.toggle('mirrored', facingMode === 'user');
     setHidden(cameraPlaceholder, true);
-    setHidden(recordButton, false);
+    setHidden(recordButton, state.captureMode !== 'assisted');
     cameraButton.textContent = '카메라 다시 연결';
+    await requestWakeLock();
+    if (state.captureMode === 'solo') {
+      setCaptureStatus('loading_detector', '준비 감지 도구를 불러오고 있습니다');
+      await startCaptureMonitor();
+    } else {
+      setCaptureStatus('assisted_ready', '촬영자가 시작 버튼을 눌러 주세요');
+    }
   } catch (error) {
+    stopStream();
     alert(error instanceof Error ? error.message : String(error));
   } finally {
     cameraButton.disabled = false;
   }
 }
 
-async function runCountdown() {
-  setHidden(countdown, false);
-  for (const label of ['2', '1', '시작']) {
-    countdown.textContent = label;
-    await sleep(label === '시작' ? 650 : 1000);
-  }
-  setHidden(countdown, true);
+function monitorPointUsable(point, minVisibility = SOLO_CAPTURE_CONFIG.minVisibility) {
+  return Boolean(point) && finite(point.x) && finite(point.y) && (point.visibility ?? 1) >= minVisibility;
 }
 
-async function startRecording() {
+function averagePoint(points) {
+  return {
+    x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+    y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
+  };
+}
+
+function readinessFromLandmarks(landmarks, now) {
+  const get = (index) => landmarks?.[index];
+  const nose = get(0);
+  const shoulders = [get(11), get(12)];
+  const hips = [get(23), get(24)];
+  const knees = [get(25), get(26)];
+  const ankles = [get(27), get(28)];
+  const toes = [get(31), get(32)];
+  const torsoSeen = [...shoulders, ...hips].filter((point) => monitorPointUsable(point)).length >= 3;
+  if (!torsoSeen) return { ready: false, key: 'no_person', message: '화면 안으로 들어와 주세요', frameComplete: false };
+  if (!monitorPointUsable(nose)) return { ready: false, key: 'head_cut', message: '머리까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
+  if (!ankles.every((point) => monitorPointUsable(point))) return { ready: false, key: 'feet_cut', message: '발끝까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
+  const core = [nose, ...shoulders, ...hips, ...knees, ...ankles];
+  if (!core.every((point) => monitorPointUsable(point))) {
+    return { ready: false, key: 'weak_tracking', message: '밝은 곳에서, 창문이나 조명을 등지지 않게 서 주세요', frameComplete: false };
+  }
+  const feet = toes.every((point) => monitorPointUsable(point)) ? toes : ankles;
+  if (Math.max(...feet.map((point) => point.y)) > 0.98) {
+    return { ready: false, key: 'feet_cut', message: '발끝까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
+  }
+  if (nose.y < 0.018) return { ready: false, key: 'head_cut', message: '머리까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
+  const allX = [...core, ...feet].map((point) => point.x);
+  const allY = [...core, ...feet].map((point) => point.y);
+  const bodyHeight = Math.max(...allY) - Math.min(...allY);
+  const hipCenter = averagePoint(hips);
+  const ankleCenter = averagePoint(ankles);
+  const hipAnkle = ankleCenter.y - hipCenter.y;
+  const frameComplete = Math.min(...allX) > 0.01 && Math.max(...allX) < 0.99
+    && Math.min(...allY) > 0.005 && Math.max(...allY) < 0.995;
+  const footPair = feet.map((point) => ({ x: point.x, y: point.y }));
+  state.monitorFootSamples.push({ at: now, feet: footPair });
+  state.monitorFootSamples = state.monitorFootSamples.filter((sample) => now - sample.at <= SOLO_CAPTURE_CONFIG.footStableWindowMs * 1.7);
+  const prior = state.monitorFootSamples.find((sample) => now - sample.at >= SOLO_CAPTURE_CONFIG.footStableWindowMs);
+  const footMotion = prior ? Math.max(...footPair.map((point, index) => Math.hypot(
+    point.x - prior.feet[index].x,
+    point.y - prior.feet[index].y,
+  ))) : Infinity;
+  if (bodyHeight > SOLO_CAPTURE_CONFIG.maxBodyHeight) {
+    return { ready: false, key: 'too_close', message: '조금 뒤로 가 주세요', bodyHeight, hipAnkle, footMotion, frameComplete };
+  }
+  if (bodyHeight < SOLO_CAPTURE_CONFIG.minBodyHeight) {
+    return { ready: false, key: 'too_far', message: '조금 앞으로 와 주세요', bodyHeight, hipAnkle, footMotion, frameComplete };
+  }
+  if (Math.min(...allX) < SOLO_CAPTURE_CONFIG.edgeMargin || Math.max(...allX) > 1 - SOLO_CAPTURE_CONFIG.edgeMargin) {
+    return { ready: false, key: 'edge', message: '화면 가운데로 와 주세요', bodyHeight, hipAnkle, footMotion, frameComplete };
+  }
+  const ready = finite(footMotion) && footMotion <= SOLO_CAPTURE_CONFIG.footStableMaxMove;
+  return {
+    ready,
+    key: ready ? 'ready' : 'moving',
+    message: ready ? '준비되었습니다' : '그 자리에서 가만히 서 주세요',
+    bodyHeight,
+    hipAnkle,
+    footMotion,
+    frameComplete,
+  };
+}
+
+function drawMonitorOverlay(landmarks) {
+  if (!video.videoWidth || !video.videoHeight) return;
+  if (previewOverlay.width !== video.videoWidth || previewOverlay.height !== video.videoHeight) {
+    previewOverlay.width = video.videoWidth;
+    previewOverlay.height = video.videoHeight;
+  }
+  const context = previewOverlay.getContext('2d');
+  context.clearRect(0, 0, previewOverlay.width, previewOverlay.height);
+  drawSkeleton(context, landmarks, previewOverlay.width, previewOverlay.height);
+}
+
+function medianNumber(values) {
+  const usable = values.filter(finite).sort((a, b) => a - b);
+  if (!usable.length) return null;
+  const middle = Math.floor(usable.length / 2);
+  return usable.length % 2 ? usable[middle] : (usable[middle - 1] + usable[middle]) / 2;
+}
+
+function cancelSoloCountdown(readiness) {
+  state.countdownToken += 1;
+  state.countdownCancelCount += 1;
+  setHidden(countdown, true);
+  state.readinessReadySince = null;
+  setCaptureStatus(readiness.key, readiness.message, { metrics: readiness });
+}
+
+async function beginSoloCountdown() {
+  if (state.capturePhase === 'countdown' || !state.lastReadiness?.ready) return;
+  const token = ++state.countdownToken;
+  setCaptureStatus('countdown', '준비되었습니다', { speak: true, metrics: state.lastReadiness });
+  setHidden(countdown, false);
+  for (let value = SOLO_CAPTURE_CONFIG.countdownSeconds; value >= 1; value -= 1) {
+    if (token !== state.countdownToken || !state.captureMonitorActive) return;
+    if (!state.lastReadiness?.ready) {
+      cancelSoloCountdown(state.lastReadiness || { key: 'moving', message: '그 자리에서 가만히 서 주세요' });
+      return;
+    }
+    countdown.textContent = String(value);
+    playCountdownBeep();
+    await sleep(1000);
+  }
+  if (token !== state.countdownToken || !state.lastReadiness?.ready) {
+    cancelSoloCountdown(state.lastReadiness || { key: 'moving', message: '그 자리에서 가만히 서 주세요' });
+    return;
+  }
+  setHidden(countdown, true);
+  await beginRecording({ automatic: true });
+}
+
+function handleRecordingMonitor(readiness, now) {
+  const elapsedMs = now - state.recordingStartedAt;
+  const elapsedSeconds = Math.max(0, elapsedMs / 1000);
+  if (readiness.frameComplete && finite(readiness.hipAnkle)) {
+    state.invalidExitSamples = 0;
+    if (elapsedMs <= SOLO_CAPTURE_CONFIG.initialStandMs + 400) {
+      state.standBaselineSamples.push(readiness.hipAnkle);
+    }
+    if (!finite(state.standBaseline) && elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs) {
+      state.standBaseline = medianNumber(state.standBaselineSamples);
+      console.info('[solo-capture] standing baseline', { value: state.standBaseline, samples: state.standBaselineSamples.length });
+    }
+    const ratio = finite(state.standBaseline) && state.standBaseline > 0
+      ? readiness.hipAnkle / state.standBaseline
+      : null;
+    const leaving = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps
+      && !state.inSquat
+      && finite(readiness.footMotion)
+      && readiness.footMotion > SOLO_CAPTURE_CONFIG.exitFootMove;
+    if (leaving) {
+      void stopRecording({ reason: 'walk_away', analysisEndSeconds: state.lastGoodCaptureSeconds });
+      return;
+    }
+    state.lastGoodCaptureSeconds = elapsedSeconds;
+    if (elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs) {
+      setCaptureStatus('recording_initial_stand', '그대로 2초 서 계세요');
+      return;
+    }
+    if (finite(ratio)) {
+      if (!state.inSquat && ratio < SOLO_CAPTURE_CONFIG.squatEnterRatio) {
+        state.inSquat = true;
+        state.finishStandSince = null;
+        console.info('[solo-capture] descent detected', { elapsedSeconds, ratio });
+      } else if (state.inSquat && ratio > SOLO_CAPTURE_CONFIG.squatExitRatio) {
+        state.inSquat = false;
+        state.roughRepCount += 1;
+        state.finishStandSince = now;
+        console.info('[solo-capture] repetition completed', { rep: state.roughRepCount, elapsedSeconds, ratio });
+      }
+      const finishReady = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
+        && !state.inSquat
+        && ratio > SOLO_CAPTURE_CONFIG.squatExitRatio
+        && finite(readiness.footMotion)
+        && readiness.footMotion <= SOLO_CAPTURE_CONFIG.footStableMaxMove;
+      if (finishReady && state.finishStandSince && now - state.finishStandSince >= SOLO_CAPTURE_CONFIG.finishStandMs) {
+        void stopRecording({ reason: 'standing_complete' });
+        return;
+      }
+    }
+    const message = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
+      ? `${state.roughRepCount}회 · 다 하셨으면 제자리에서 2초 서 계세요`
+      : state.roughRepCount > 0
+        ? `${state.roughRepCount}회 · 8회 권장 (최소 6회)`
+        : '시작하세요 · 8회 권장 (최소 6회)';
+    setCaptureStatus(`recording_${state.roughRepCount}`, message);
+  } else if (state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps) {
+    state.invalidExitSamples += 1;
+    if (state.invalidExitSamples >= SOLO_CAPTURE_CONFIG.invalidExitSamples) {
+      void stopRecording({ reason: 'left_frame', analysisEndSeconds: state.lastGoodCaptureSeconds });
+    }
+  }
+}
+
+function handleMonitorLandmarks(landmarks, now) {
+  const readiness = readinessFromLandmarks(landmarks, now);
+  state.lastReadiness = readiness;
+  if (state.recorder?.state === 'recording') {
+    handleRecordingMonitor(readiness, now);
+    return;
+  }
+  if (state.capturePhase === 'countdown') {
+    if (!readiness.ready) cancelSoloCountdown(readiness);
+    return;
+  }
+  if (!readiness.ready) {
+    state.readinessReadySince = null;
+    setCaptureStatus(readiness.key, readiness.message, { metrics: readiness });
+    return;
+  }
+  state.readinessReadySince ||= now;
+  state.readinessCompletedAt ||= now;
+  setCaptureStatus('ready', '준비되었습니다', { metrics: readiness });
+  if (now - state.readinessReadySince >= SOLO_CAPTURE_CONFIG.readyHoldMs) void beginSoloCountdown();
+}
+
+async function startCaptureMonitor() {
+  state.captureMonitorActive = true;
+  state.monitorFootSamples = [];
+  state.readinessReadySince = null;
+  try {
+    const landmarker = await initPoseLandmarker({ quiet: true });
+    if (!state.captureMonitorActive || !state.stream) return;
+    const [width, height] = analysisCanvasSize(video.videoWidth, video.videoHeight, 320);
+    state.monitorCanvas ||= document.createElement('canvas');
+    state.monitorCanvas.width = width;
+    state.monitorCanvas.height = height;
+    state.monitorContext = state.monitorCanvas.getContext('2d', { alpha: false });
+    console.info('[solo-capture] provisional config', SOLO_CAPTURE_CONFIG);
+    const intervalMs = 1000 / SOLO_CAPTURE_CONFIG.previewFps;
+    const tick = async () => {
+      if (!state.captureMonitorActive || !state.stream || state.captureMonitorBusy) return;
+      const started = performance.now();
+      state.captureMonitorBusy = true;
+      try {
+        if (video.readyState >= 2) {
+          state.monitorContext.drawImage(video, 0, 0, width, height);
+          state.poseTimestampMs += intervalMs;
+          const result = landmarker.detectForVideo(state.monitorCanvas, state.poseTimestampMs);
+          const landmarks = result.landmarks?.[0] || null;
+          drawMonitorOverlay(landmarks);
+          handleMonitorLandmarks(landmarks, performance.now());
+        }
+      } catch (error) {
+        console.error('[solo-capture] preview detection failed', error);
+      } finally {
+        state.captureMonitorBusy = false;
+      }
+      const delay = Math.max(0, intervalMs - (performance.now() - started));
+      if (state.captureMonitorActive) state.captureMonitorTimer = setTimeout(tick, delay);
+    };
+    void tick();
+  } catch (error) {
+    console.error('[solo-capture] detector setup failed', error);
+    setCaptureStatus('detector_error', '준비 감지를 시작할 수 없습니다 · 다른 사람이 촬영을 선택해 주세요');
+  }
+}
+
+async function beginRecording({ automatic = false } = {}) {
   if (!state.stream) return;
   const mimeType = chooseRecorderMime();
   if (!window.MediaRecorder || !mimeType) {
@@ -221,33 +666,88 @@ async function startRecording() {
     if (event.data?.size) state.recordChunks.push(event.data);
   });
   state.recorder.start(250);
-  const startedAt = performance.now();
+  state.recordingStartedAt = performance.now();
+  state.analysisEndSeconds = null;
+  state.roughRepCount = 0;
+  state.inSquat = false;
+  state.standBaselineSamples = [];
+  state.standBaseline = null;
+  state.finishStandSince = null;
+  state.lastGoodCaptureSeconds = 0;
+  state.invalidExitSamples = 0;
+  state.captureRecordMeta = {
+    mode: state.captureMode,
+    facingMode: state.facingMode,
+    mimeType,
+    stopReason: null,
+    analysisEndSeconds: null,
+    readinessSeconds: finite(state.cameraRequestedAt) && finite(state.readinessCompletedAt)
+      ? (state.readinessCompletedAt - state.cameraRequestedAt) / 1000
+      : null,
+    countdownCancelCount: state.countdownCancelCount,
+    cameraSettings: state.cameraSettings,
+  };
   state.recordTimer = setInterval(() => {
-    recordTime.textContent = formatClock((performance.now() - startedAt) / 1000);
+    const elapsedMs = performance.now() - state.recordingStartedAt;
+    recordTime.textContent = formatClock(elapsedMs / 1000);
+    if (elapsedMs >= SOLO_CAPTURE_CONFIG.maxRecordingMs) {
+      void stopRecording({ reason: 'maximum', analysisEndSeconds: MAX_VIDEO_SECONDS });
+    }
   }, 250);
   recordTime.textContent = '00:00';
   setHidden(recordBadge, false);
   setHidden(recordButton, true);
   setHidden(cameraButton, true);
+  setHidden(facingControl, true);
   setHidden(stopButton, false);
-  await runCountdown();
+  setCaptureStatus('recording_initial_stand', automatic ? '그대로 2초 서 계세요' : '촬영 중 · 준비자세부터 시작해 주세요', { speak: automatic });
 }
 
-async function stopRecording() {
-  if (!state.recorder || state.recorder.state === 'inactive') return;
-  stopButton.disabled = true;
-  const stopped = once(state.recorder, 'stop', 'error', 10000);
-  state.recorder.stop();
-  await stopped;
-  clearInterval(state.recordTimer);
-  setHidden(recordBadge, true);
-  stopStream();
+async function startRecording() {
+  await beginRecording({ automatic: false });
+}
 
-  const mimeType = state.recorder.mimeType || state.recordChunks[0]?.type || 'video/webm';
-  const blob = new Blob(state.recordChunks, { type: mimeType });
-  stopButton.disabled = false;
-  setHidden(stopButton, true);
-  await loadVideoAndAnalyze(blob, `browser-recording.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`, 'camera');
+async function stopRecording({ reason = 'manual', analysisEndSeconds = null } = {}) {
+  if (state.stoppingRecording || !state.recorder || state.recorder.state === 'inactive') return;
+  state.stoppingRecording = true;
+  stopButton.disabled = true;
+  stopCaptureMonitor();
+  const elapsedSeconds = finite(state.recordingStartedAt)
+    ? Math.max(0, (performance.now() - state.recordingStartedAt) / 1000)
+    : null;
+  const endSeconds = finite(analysisEndSeconds)
+    ? Math.max(0, Math.min(analysisEndSeconds, elapsedSeconds ?? analysisEndSeconds))
+    : null;
+  state.analysisEndSeconds = endSeconds;
+  if (state.captureRecordMeta) {
+    state.captureRecordMeta.stopReason = reason;
+    state.captureRecordMeta.analysisEndSeconds = endSeconds;
+  }
+  setCaptureStatus('capture_complete', '촬영 완료 · 휴대폰으로 와 주세요', { speak: true });
+  try {
+    const stopped = once(state.recorder, 'stop', 'error', 10000);
+    state.recorder.stop();
+    await stopped;
+    const mimeType = state.recorder.mimeType || state.recordChunks[0]?.type || 'video/webm';
+    const blob = new Blob(state.recordChunks, { type: mimeType });
+    stopStream();
+    await sleep(650);
+    await loadVideoAndAnalyze(
+      blob,
+      `browser-recording.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`,
+      'camera',
+      { analysisEndSeconds: endSeconds },
+    );
+  } catch (error) {
+    stopStream();
+    showAnalysisError(error);
+  } finally {
+    clearInterval(state.recordTimer);
+    setHidden(recordBadge, true);
+    setHidden(stopButton, true);
+    stopButton.disabled = false;
+    state.stoppingRecording = false;
+  }
 }
 
 async function loadVideoSource(blob) {
@@ -267,7 +767,10 @@ async function loadVideoSource(blob) {
   if (!finite(video.duration) || video.duration <= 0 || !video.videoWidth || !video.videoHeight) {
     throw new Error('영상의 길이나 화면 크기를 읽지 못했습니다. 브라우저에서 재생 가능한 MP4/WebM 영상을 사용해 주세요.');
   }
-  if (video.duration > MAX_VIDEO_SECONDS) {
+  const effectiveDuration = finite(state.analysisEndSeconds)
+    ? Math.min(video.duration, state.analysisEndSeconds)
+    : video.duration;
+  if (effectiveDuration > MAX_VIDEO_SECONDS) {
     throw new Error(`영상이 ${MAX_VIDEO_SECONDS}초를 넘습니다. 전체 세트를 임의로 잘라 분석하지 않도록 중단했습니다. 사진 앱이나 편집 도구에서 한 세트만 ${MAX_VIDEO_SECONDS}초 이하로 잘라 다시 올려 주세요.`);
   }
   if (video.duration > 60) {
@@ -276,10 +779,20 @@ async function loadVideoSource(blob) {
   setHidden(cameraPlaceholder, true);
 }
 
-async function loadVideoAndAnalyze(blob, name, kind) {
+async function loadVideoAndAnalyze(blob, name, kind, { analysisEndSeconds = null } = {}) {
   try {
     state.sourceName = name;
     state.sourceKind = kind;
+    state.analysisEndSeconds = finite(analysisEndSeconds) ? analysisEndSeconds : null;
+    if (kind !== 'camera') {
+      state.captureRecordMeta = {
+        mode: kind === 'file' ? 'upload' : kind,
+        facingMode: null,
+        mimeType: blob.type || null,
+        stopReason: null,
+        analysisEndSeconds: state.analysisEndSeconds,
+      };
+    }
     await loadVideoSource(blob);
     await analyzeVideo();
   } catch (error) {
@@ -333,31 +846,38 @@ async function seekVideo(time) {
   await event;
 }
 
-async function initPoseLandmarker() {
+async function initPoseLandmarker({ quiet = false } = {}) {
   if (state.poseLandmarker) return state.poseLandmarker;
-  showAnalysis('자세 인식 도구를 준비하고 있습니다.', '처음 한 번만 내려받고 이후에는 브라우저 캐시를 사용합니다.', 8, '도구 준비 중 · 남은 시간 계산 중');
-  const { FilesetResolver, PoseLandmarker } = await import(
-    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm'
-  );
-  const fileset = await FilesetResolver.forVisionTasks(
-    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm',
-  );
-  state.poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
-    baseOptions: {
-      modelAssetPath: new URL('./models/pose_landmarker_lite.task', window.location.href).href,
-      delegate: 'CPU',
-    },
-    runningMode: 'VIDEO',
-    numPoses: 1,
-    minPoseDetectionConfidence: 0.5,
-    minPosePresenceConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
-  return state.poseLandmarker;
+  if (!quiet) showAnalysis('자세 인식 도구를 준비하고 있습니다.', '처음 한 번만 내려받고 이후에는 브라우저 캐시를 사용합니다.', 8, '도구 준비 중 · 남은 시간 계산 중');
+  state.poseLandmarkerPromise ||= (async () => {
+    const { FilesetResolver, PoseLandmarker } = await import(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm'
+    );
+    const fileset = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm',
+    );
+    state.poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: {
+        modelAssetPath: new URL('./models/pose_landmarker_lite.task', window.location.href).href,
+        delegate: 'CPU',
+      },
+      runningMode: 'VIDEO',
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+    return state.poseLandmarker;
+  })();
+  try {
+    return await state.poseLandmarkerPromise;
+  } catch (error) {
+    state.poseLandmarkerPromise = null;
+    throw error;
+  }
 }
 
-function analysisCanvasSize(width, height) {
-  const maxSide = 960;
+function analysisCanvasSize(width, height, maxSide = 960) {
   const scale = Math.min(1, maxSide / Math.max(width, height));
   return [Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale))];
 }
@@ -369,7 +889,9 @@ async function extractLandmarks() {
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d', { alpha: false, willReadFrequently: false });
-  const duration = video.duration;
+  const duration = finite(state.analysisEndSeconds)
+    ? Math.min(video.duration, state.analysisEndSeconds)
+    : video.duration;
   const frameCount = Math.max(1, Math.floor(duration * state.analysisFps));
   const frames = [];
   const startedAt = performance.now();
@@ -380,7 +902,8 @@ async function extractLandmarks() {
     const time = index / state.analysisFps;
     await seekVideo(time);
     context.drawImage(video, 0, 0, width, height);
-    const result = landmarker.detectForVideo(canvas, Math.round(index * 1000 / state.analysisFps));
+    state.poseTimestampMs += 1000 / state.analysisFps;
+    const result = landmarker.detectForVideo(canvas, state.poseTimestampMs);
     const landmarks = result.landmarks?.[0];
     frames.push(
       landmarks
@@ -613,6 +1136,7 @@ function renderSummary() {
     <div class="summary-chip"><small>준비자세 대비 가장 좁은 무릎 간격</small><strong>${knee.index >= 0 ? `${knee.index + 1}회차 · ${multiple(knee.value)}` : '확인 어려움'}</strong></div>
     <div class="summary-chip"><small>세트 안 깊이 순서</small><strong>${deep.index >= 0 ? `${deep.index + 1}회차가 가장 깊음` : '확인 어려움'}</strong></div>
   `;
+  setHidden($('#low-rep-note'), !(state.result.n_reps >= 4 && state.result.n_reps <= 5));
   return { knee, deep };
 }
 
@@ -1392,10 +1916,16 @@ function renderTechnical() {
   const warnings = state.result.warnings || [];
   const qc = state.result.capture_qc || {};
   const tracking = state.result.qc || {};
+  const record = state.captureRecordMeta || {};
+  const camera = record.cameraSettings || {};
+  const modeLabel = { solo: '혼자 촬영', assisted: '다른 사람이 촬영', upload: '기존 영상 업로드', sample: '샘플' }[record.mode] || '확인 어려움';
+  const stopLabel = { standing_complete: '2초 서기 감지', walk_away: '발 이동 감지', left_frame: '화면 이탈 감지', maximum: '최대 촬영 시간', manual: '수동 종료' }[record.stopReason] || '해당 없음';
   $('#technical-content').innerHTML = `
     <p><strong>입력:</strong> ${escapeHtml(state.sourceName)} · ${state.analysisFps}fps로 분석 · ${state.result.n_frames}프레임</p>
     <p><strong>기기 내 분석 시간:</strong> ${finite(state.analysisElapsedSeconds) ? `${state.analysisElapsedSeconds.toFixed(1)}초` : '확인 어려움'} · MediaPipe Lite · 최대 960px</p>
     <p><strong>준비자세:</strong> ${standingLabel()}</p>
+    <p><strong>촬영 방식:</strong> ${modeLabel}${record.mimeType ? ` · ${escapeHtml(record.mimeType)}` : ''}${record.stopReason ? ` · ${stopLabel}` : ''}${finite(record.analysisEndSeconds) ? ` · 분석 종료 ${record.analysisEndSeconds.toFixed(1)}초` : ''}</p>
+    ${record.mode === 'solo' ? `<p><strong>자동 촬영 기록:</strong> 권한 요청부터 준비 완료 ${finite(record.readinessSeconds) ? `${record.readinessSeconds.toFixed(1)}초` : '확인 어려움'} · 카운트다운 취소 ${record.countdownCancelCount ?? 0}회 · 카메라 ${camera.width ?? '?'}×${camera.height ?? '?'} ${finite(camera.frameRate) ? `${camera.frameRate.toFixed(0)}fps` : 'fps 확인 어려움'}</p>` : ''}
     <p><strong>미검출 연결:</strong> ${gap.n_frames_interpolated ?? 0}프레임 · 가장 긴 연속 공백 ${gap.longest_gap_frames ?? 0}프레임</p>
     <p><strong>촬영 기록:</strong> 화면 점유율 ${finite(qc.frame_fill_ratio) ? qc.frame_fill_ratio.toFixed(2) : '확인 어려움'} · 좌우 방향 표기 ${qc.side_labels_usable ? '사용 가능' : '사용하지 않음'}</p>
     <p><strong>추적 기록:</strong> 관절 튐 제외 ${tracking.jump_frames ?? 0}프레임 · 핵심 관절 미검출 비율 ${finite(tracking.core_missing_frac) ? `${Math.round(tracking.core_missing_frac * 100)}%` : '확인 어려움'}</p>
@@ -1443,6 +1973,8 @@ async function renderResults() {
 
 function restart({ preserveRetry = false } = {}) {
   document.querySelector('.analysis-retry')?.remove();
+  stopStream();
+  clearInterval(state.recordTimer);
   state.repThumbnailObserver?.disconnect();
   state.repThumbnailObserver = null;
   if (state.sourceUrl) URL.revokeObjectURL(state.sourceUrl);
@@ -1452,6 +1984,17 @@ function restart({ preserveRetry = false } = {}) {
   state.frames = null;
   state.result = null;
   state.analysisElapsedSeconds = null;
+  state.analysisEndSeconds = null;
+  state.captureRecordMeta = null;
+  state.recordingStartedAt = null;
+  state.stoppingRecording = false;
+  state.recorder = null;
+  state.recordChunks = [];
+  state.cameraRequestedAt = null;
+  state.cameraReadyAt = null;
+  state.readinessCompletedAt = null;
+  state.countdownCancelCount = 0;
+  state.cameraSettings = null;
   state.comparisonMetric = null;
   state.comparison = null;
   if (!preserveRetry) {
@@ -1462,14 +2005,10 @@ function restart({ preserveRetry = false } = {}) {
   video.pause();
   video.removeAttribute('src');
   video.load();
-  setHidden(cameraPlaceholder, false);
   setHidden($('#analysis-section'), true);
   setHidden($('#results-section'), true);
   setHidden($('#capture-section'), false);
-  setHidden(recordButton, true);
-  setHidden(stopButton, true);
-  setHidden(cameraButton, false);
-  cameraButton.textContent = '카메라 켜기';
+  selectCaptureMode(state.captureMode);
   $('#capture-title').textContent = preserveRetry
     ? '같은 촬영 조건으로 한 세트를 더 진행하세요.'
     : '분석할 스쿼트 영상을 준비해 주세요.';
@@ -1482,14 +2021,32 @@ function restart({ preserveRetry = false } = {}) {
 }
 
 document.querySelectorAll('[data-action="go-capture"]').forEach((button) => {
-  button.addEventListener('click', () => $('#capture-section').scrollIntoView({ behavior: 'smooth' }));
+  button.addEventListener('click', () => {
+    selectCaptureMode('solo');
+    $('#capture-section').scrollIntoView({ behavior: 'smooth' });
+  });
 });
 document.querySelectorAll('[data-action="open-upload"]').forEach((button) => {
-  button.addEventListener('click', () => fileInput.click());
+  button.addEventListener('click', () => {
+    selectCaptureMode('upload');
+    $('#capture-section').scrollIntoView({ behavior: 'smooth' });
+    fileInput.click();
+  });
+});
+document.querySelectorAll('[data-capture-mode]').forEach((button) => {
+  button.addEventListener('click', () => selectCaptureMode(button.dataset.captureMode));
 });
 cameraButton.addEventListener('click', enableCamera);
 recordButton.addEventListener('click', startRecording);
-stopButton.addEventListener('click', stopRecording);
+stopButton.addEventListener('click', () => { void stopRecording({ reason: 'manual' }); });
+facingSelect.addEventListener('change', () => { state.facingMode = facingSelect.value; });
+soundToggle.addEventListener('click', async () => {
+  state.audioEnabled = !state.audioEnabled;
+  soundToggle.setAttribute('aria-pressed', String(state.audioEnabled));
+  soundToggle.textContent = state.audioEnabled ? '소리 안내 켜짐' : '소리 안내 꺼짐';
+  if (state.audioEnabled) await ensureAudioReady();
+  else window.speechSynthesis?.cancel?.();
+});
 $('#restart-button').addEventListener('click', () => restart());
 $('#retake-button').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
 $('#retry-button').addEventListener('click', startRetry);
@@ -1499,11 +2056,15 @@ fileInput.addEventListener('change', async () => {
   if (!file) return;
   state.samplePhase = 0;
   stopStream();
-  await loadVideoAndAnalyze(file, file.name, 'file');
+  await loadVideoAndAnalyze(file, file.name, 'file', { analysisEndSeconds: null });
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && (state.stream || state.recorder?.state === 'recording')) void requestWakeLock();
 });
 window.addEventListener('beforeunload', () => {
   stopStream();
   if (state.sourceUrl) URL.revokeObjectURL(state.sourceUrl);
   state.poseLandmarker?.close?.();
 });
+selectCaptureMode('solo');
 initSampleExperience().catch(() => {});

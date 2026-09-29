@@ -102,6 +102,19 @@ def warn(code, severity, message, **extra):
 # 정면에서 골반폭은 스쿼트 중 거의 변하지 않는다: OpenCap 0°·±40° 133 저점에서 저점/서기 골반폭 0.80~1.12, 좌우 순서 항상 일치.
 HIP_RATIO_MIN, HIP_RATIO_MAX = 0.70, 1.43     # 잠정 — 위 분포 밖으로 여유
 COLLAPSE_FRAC_ERROR = 0.25                    # 세트의 이 비율 이상이 붕괴면 추적 자체를 믿지 않는다
+# run62 (I146) — 새 임계값 아님. 정의상 불가능한 값과 기존 최소 반복 조건만 쓴다.
+#   D1 = 저점 골반–발목 세로거리 ÷ 서기 값. 반복은 골반높이비 < 0.90 에서만 잡히므로 정의상 0 < D1 < 1.
+#   0 이하(골반이 발목 높이 이하)·1 이상은 기준자세가 잘못 잡힌 것 → 그 반복 값은 쓰지 않는다.
+#   MIN_USABLE_REPS = feedback_rules.MIN_REPS(4) 와 같은 값: 이보다 적으면 반복 간 비교 자체가 성립하지 않는다.
+MIN_USABLE_REPS = 4
+
+def rep_values_possible(per_rep):
+    """반복별로 지표 정의상 가능한 값인지 (D1 이 NaN 이면 판단하지 않고 True)."""
+    out = []
+    for d in per_rep:
+        v = d.get("D1_hip_ankle_rel")
+        out.append(not (v == v and v is not None and not (0.0 < float(v) < 1.0)))
+    return out
 
 
 def rep_geometry_ok(P, bottoms, stand_window):
