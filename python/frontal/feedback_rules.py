@@ -143,13 +143,21 @@ def evaluate(result):
 
 
 CONSISTENCY = {A2: [(A45, "lower")]}   # run47: A2 개선/악화는 A45 가 같은 방향일 때만 인정 (primary=A2, A45=확인용)
+A1 = "A1_knee_ankle_w"
+CONSISTENCY[A1] = [(A45, "lower")]    # run59: 세트 간 무릎 비교도 A45 방향 확인 유지
+# run59 (I143): 세트 간 Retry/Verify 에서만 A2 대신 A1(저점 무릎폭 ÷ 저점 발목폭)을 비교한다.
+#   A2 는 분모(서기 무릎폭)가 세트마다 따로 잡혀 재촬영 정상 6쌍 중 5쌍이 FLOOR 초과. A1 은 0/6, narrow Δ −0.36.
+#   세트 안 규칙(KNEE_REP/LATE)은 A2 그대로 — 한 세트 안에서는 분모가 같다.
+RETRY_METRIC = {A2: A1}
 
 
 def retry_targets(feedback):
     """Retry/Verify 에 넘길 [(지표, 방향, [(보조지표, 방향)])] — 중복 제거, 우선순위 순.
-    compare_sets.compare_many 에 그대로 넘긴다."""
+    compare_sets.compare_many 에 그대로 넘긴다.
+    네 번째 값 = 이 비교를 부른 피드백 지표 (근거 장면 회차를 찾을 때 쓴다; A2 피드백 → A1 비교)."""
     seen, t = set(), []
     for f in feedback:
-        if f["metric"] not in seen:
-            seen.add(f["metric"]); t.append((f["metric"], f["better"], CONSISTENCY.get(f["metric"], [])))
+        m = RETRY_METRIC.get(f["metric"], f["metric"])
+        if m not in seen:
+            seen.add(m); t.append((m, f["better"], CONSISTENCY.get(m, []), f["metric"]))
     return t

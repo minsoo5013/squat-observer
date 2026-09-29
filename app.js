@@ -1287,8 +1287,8 @@ async function startRetry() {
   const targets = state.result.retry_targets || [];
   if (!targets.length) return;
   const evidence = {};
-  for (const [metric] of targets) {
-    const feedback = (state.result.feedback || []).find((item) => item.metric === metric);
+  for (const [metric, , , source] of targets) {
+    const feedback = (state.result.feedback || []).find((item) => item.metric === (source || metric));
     const preferred = Math.max(0, Number(feedback?.reps?.[0] || 1) - 1);
     const repIndex = nearestUsableRep(state.result, preferred);
     if (repIndex < 0) continue;

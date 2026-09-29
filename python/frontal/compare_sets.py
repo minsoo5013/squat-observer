@@ -36,7 +36,7 @@ VIEW_CHANGE_REL = 0.12
 STANCE_CHANGE_REL = 0.08
 
 LABEL = {                       # 사용자 문구용 이름 (판정어 없음)
-    "A1_knee_ankle_w": "발목 간격 대비 무릎 간격",
+    "A1_knee_ankle_w": "가장 낮은 자세의 무릎 간격 (발목 간격 대비)",   # run59: 세트 간 무릎 비교 지표
     "A2_knee_w_rel_stand": "준비자세 대비 무릎 간격",
     "A45_knee_in_mean": "무릎이 안쪽으로 움직인 정도",
     "D1_hip_ankle_rel": "가장 낮은 자세의 골반 높이",
