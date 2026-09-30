@@ -30,6 +30,8 @@ const state = {
   facingMode: 'user',
   capturePhase: 'idle',
   captureStatusKey: null,
+  lastSpokenText: null,
+  lastSpokenAt: 0,
   captureMonitorTimer: null,
   captureMonitorActive: false,
   captureMonitorBusy: false,
@@ -54,7 +56,10 @@ const state = {
   standBaseline: null,
   finishStandSince: null,
   lastGoodCaptureSeconds: 0,
+  lastStationaryCaptureSeconds: 0,
   invalidExitSamples: 0,
+  startCueSpoken: false,
+  finishCueSpoken: false,
   cameraRequestedAt: null,
   cameraReadyAt: null,
   readinessCompletedAt: null,
@@ -108,6 +113,7 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
   squatExitRatio: 0.90,
   exitFootMove: 0.035,
   invalidExitSamples: 2,
+  guidanceRepeatMs: 3000,
 });
 
 function setHidden(element, hidden) {
@@ -213,7 +219,12 @@ function showAnalysisError(error) {
   $('.analysis-retry').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
 }
 
-function setCaptureStatus(key, message, { speak = false, metrics = null } = {}) {
+function setCaptureStatus(key, message, {
+  speak = false,
+  speechText = message,
+  repeatSpeakMs = 0,
+  metrics = null,
+} = {}) {
   const changed = state.captureStatusKey !== key;
   if (changed) {
     console.info('[solo-capture]', {
@@ -227,12 +238,23 @@ function setCaptureStatus(key, message, { speak = false, metrics = null } = {}) 
   state.capturePhase = key;
   captureStatus.textContent = message;
   setHidden(captureStatus, false);
-  if (changed && speak) speakCapture(message);
+  if (speak) {
+    const now = performance.now();
+    const differentSpeech = state.lastSpokenText !== speechText;
+    const repeatDue = repeatSpeakMs > 0 && now - state.lastSpokenAt >= repeatSpeakMs;
+    if (differentSpeech || repeatDue) {
+      state.lastSpokenText = speechText;
+      state.lastSpokenAt = now;
+      speakCapture(speechText);
+    }
+  }
 }
 
 function hideCaptureStatus() {
   state.captureStatusKey = null;
   state.capturePhase = 'idle';
+  state.lastSpokenText = null;
+  state.lastSpokenAt = 0;
   captureStatus.textContent = '';
   setHidden(captureStatus, true);
 }
@@ -365,6 +387,7 @@ async function enableCamera() {
       throw new Error('이 브라우저에서는 카메라 촬영을 지원하지 않습니다. 저장된 영상을 선택해 주세요.');
     }
     stopStream();
+    resetPoseLandmarker();
     state.cameraRequestedAt = performance.now();
     state.cameraReadyAt = null;
     state.readinessCompletedAt = null;
@@ -432,7 +455,7 @@ function readinessFromLandmarks(landmarks, now) {
   if (!ankles.every((point) => monitorPointUsable(point))) return { ready: false, key: 'feet_cut', message: '발끝까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
   const core = [nose, ...shoulders, ...hips, ...knees, ...ankles];
   if (!core.every((point) => monitorPointUsable(point))) {
-    return { ready: false, key: 'weak_tracking', message: '밝은 곳에서, 창문이나 조명을 등지지 않게 서 주세요', frameComplete: false };
+    return { ready: false, key: 'weak_tracking', message: '밝은 곳에서 정면으로 서 주세요', frameComplete: false };
   }
   const feet = toes.every((point) => monitorPointUsable(point)) ? toes : ankles;
   if (Math.max(...feet.map((point) => point.y)) > 0.98) {
@@ -494,12 +517,34 @@ function medianNumber(values) {
   return usable.length % 2 ? usable[middle] : (usable[middle - 1] + usable[middle]) / 2;
 }
 
+function setReadinessStatus(readiness) {
+  const speechText = {
+    no_person: '화면 안으로 들어와 주세요',
+    feet_cut: '조금 뒤로 가 주세요',
+    head_cut: '조금 뒤로 가 주세요',
+    too_close: '조금 뒤로 가 주세요',
+    too_far: '조금 앞으로 와 주세요',
+    edge: '화면 가운데로 와 주세요',
+  }[readiness.key];
+  setCaptureStatus(readiness.key, readiness.message, {
+    speak: Boolean(speechText),
+    speechText,
+    repeatSpeakMs: SOLO_CAPTURE_CONFIG.guidanceRepeatMs,
+    metrics: readiness,
+  });
+}
+
+function lastStationaryAnalysisEnd() {
+  const lastStationary = state.lastStationaryCaptureSeconds || state.lastGoodCaptureSeconds;
+  return Math.max(0, lastStationary - 1 / SOLO_CAPTURE_CONFIG.previewFps);
+}
+
 function cancelSoloCountdown(readiness) {
   state.countdownToken += 1;
   state.countdownCancelCount += 1;
   setHidden(countdown, true);
   state.readinessReadySince = null;
-  setCaptureStatus(readiness.key, readiness.message, { metrics: readiness });
+  setReadinessStatus(readiness);
 }
 
 async function beginSoloCountdown() {
@@ -540,17 +585,31 @@ function handleRecordingMonitor(readiness, now) {
     const ratio = finite(state.standBaseline) && state.standBaseline > 0
       ? readiness.hipAnkle / state.standBaseline
       : null;
+    if (finite(readiness.footMotion) && readiness.footMotion <= SOLO_CAPTURE_CONFIG.footStableMaxMove) {
+      state.lastStationaryCaptureSeconds = elapsedSeconds;
+    }
     const leaving = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps
       && !state.inSquat
       && finite(readiness.footMotion)
       && readiness.footMotion > SOLO_CAPTURE_CONFIG.exitFootMove;
     if (leaving) {
-      void stopRecording({ reason: 'walk_away', analysisEndSeconds: state.lastGoodCaptureSeconds });
+      void stopRecording({
+        reason: 'walk_away',
+        analysisEndSeconds: lastStationaryAnalysisEnd(),
+      });
       return;
     }
     state.lastGoodCaptureSeconds = elapsedSeconds;
     if (elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs) {
-      setCaptureStatus('recording_initial_stand', '그대로 2초 서 계세요');
+      setCaptureStatus('recording_initial_stand', '2초 동안 그대로 서세요');
+      return;
+    }
+    if (!state.startCueSpoken) {
+      state.startCueSpoken = true;
+      setCaptureStatus('recording_start', '시작하세요 · 8회 권장', {
+        speak: true,
+        speechText: '시작하세요',
+      });
       return;
     }
     if (finite(ratio)) {
@@ -574,16 +633,24 @@ function handleRecordingMonitor(readiness, now) {
         return;
       }
     }
+    const finishCue = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps && !state.finishCueSpoken;
+    if (finishCue) state.finishCueSpoken = true;
     const message = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
-      ? `${state.roughRepCount}회 · 다 하셨으면 제자리에서 2초 서 계세요`
+      ? `약 ${state.roughRepCount}회 · 끝났으면 2초 서세요`
       : state.roughRepCount > 0
-        ? `${state.roughRepCount}회 · 8회 권장 (최소 6회)`
-        : '시작하세요 · 8회 권장 (최소 6회)';
-    setCaptureStatus(`recording_${state.roughRepCount}`, message);
+        ? `약 ${state.roughRepCount}회 · 계속하세요`
+        : '시작하세요 · 8회 권장';
+    setCaptureStatus(`recording_${state.roughRepCount}`, message, {
+      speak: finishCue,
+      speechText: '다 하셨으면 제자리에서 2초 서 계세요',
+    });
   } else if (state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps) {
     state.invalidExitSamples += 1;
     if (state.invalidExitSamples >= SOLO_CAPTURE_CONFIG.invalidExitSamples) {
-      void stopRecording({ reason: 'left_frame', analysisEndSeconds: state.lastGoodCaptureSeconds });
+      void stopRecording({
+        reason: 'left_frame',
+        analysisEndSeconds: lastStationaryAnalysisEnd(),
+      });
     }
   }
 }
@@ -601,7 +668,7 @@ function handleMonitorLandmarks(landmarks, now) {
   }
   if (!readiness.ready) {
     state.readinessReadySince = null;
-    setCaptureStatus(readiness.key, readiness.message, { metrics: readiness });
+    setReadinessStatus(readiness);
     return;
   }
   state.readinessReadySince ||= now;
@@ -674,7 +741,10 @@ async function beginRecording({ automatic = false } = {}) {
   state.standBaseline = null;
   state.finishStandSince = null;
   state.lastGoodCaptureSeconds = 0;
+  state.lastStationaryCaptureSeconds = 0;
   state.invalidExitSamples = 0;
+  state.startCueSpoken = false;
+  state.finishCueSpoken = false;
   state.captureRecordMeta = {
     mode: state.captureMode,
     facingMode: state.facingMode,
@@ -700,7 +770,10 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(cameraButton, true);
   setHidden(facingControl, true);
   setHidden(stopButton, false);
-  setCaptureStatus('recording_initial_stand', automatic ? '그대로 2초 서 계세요' : '촬영 중 · 준비자세부터 시작해 주세요', { speak: automatic });
+  setCaptureStatus('recording_initial_stand', automatic ? '2초 동안 그대로 서세요' : '촬영 중 · 준비자세부터 시작해 주세요', {
+    speak: automatic,
+    speechText: automatic ? '그대로 2초 서 계세요' : undefined,
+  });
 }
 
 async function startRecording() {
@@ -781,6 +854,8 @@ async function loadVideoSource(blob) {
 
 async function loadVideoAndAnalyze(blob, name, kind, { analysisEndSeconds = null } = {}) {
   try {
+    // 미리보기의 VIDEO 추적 상태와 타임스탬프가 본 분석에 이어지지 않게 매 분석마다 새 인스턴스를 쓴다.
+    resetPoseLandmarker();
     state.sourceName = name;
     state.sourceKind = kind;
     state.analysisEndSeconds = finite(analysisEndSeconds) ? analysisEndSeconds : null;
@@ -844,6 +919,14 @@ async function seekVideo(time) {
   const event = once(video, 'seeked', 'error', 10000);
   video.currentTime = safeTime;
   await event;
+}
+
+function resetPoseLandmarker() {
+  const landmarker = state.poseLandmarker;
+  state.poseLandmarker = null;
+  state.poseLandmarkerPromise = null;
+  state.poseTimestampMs = 0;
+  landmarker?.close?.();
 }
 
 async function initPoseLandmarker({ quiet = false } = {}) {
@@ -1995,6 +2078,10 @@ function restart({ preserveRetry = false } = {}) {
   state.readinessCompletedAt = null;
   state.countdownCancelCount = 0;
   state.cameraSettings = null;
+  state.lastGoodCaptureSeconds = 0;
+  state.lastStationaryCaptureSeconds = 0;
+  state.startCueSpoken = false;
+  state.finishCueSpoken = false;
   state.comparisonMetric = null;
   state.comparison = null;
   if (!preserveRetry) {
@@ -2064,7 +2151,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('beforeunload', () => {
   stopStream();
   if (state.sourceUrl) URL.revokeObjectURL(state.sourceUrl);
-  state.poseLandmarker?.close?.();
+  resetPoseLandmarker();
 });
 selectCaptureMode('solo');
 initSampleExperience().catch(() => {});
