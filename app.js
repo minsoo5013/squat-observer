@@ -100,7 +100,7 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
   maxBodyHeight: 0.78,
   footStableWindowMs: 1000,
   footStableMaxMove: 0.018,
-  readyHoldMs: 800,
+  readyHoldMs: 2000,
   countdownSeconds: 3,
   initialStandMs: 2000,
   finishStandMs: 2000,
@@ -443,7 +443,7 @@ function readinessFromLandmarks(landmarks, now) {
   if (!ankles.every((point) => monitorPointUsable(point))) return { ready: false, key: 'feet_cut', message: '발끝까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
   const core = [nose, ...shoulders, ...hips, ...knees, ...ankles];
   if (!core.every((point) => monitorPointUsable(point))) {
-    return { ready: false, key: 'weak_tracking', message: '밝은 곳에서 정면으로 서 주세요', frameComplete: false };
+    return { ready: false, key: 'weak_tracking', message: '조금 더 밝은 곳으로 이동해 정면으로 서 주세요', frameComplete: false };
   }
   const feet = toes.every((point) => monitorPointUsable(point)) ? toes : ankles;
   if (Math.max(...feet.map((point) => point.y)) > 0.98) {
@@ -529,7 +529,7 @@ async function beginSoloCountdown() {
   if (state.capturePhase === 'countdown' || !state.lastReadiness?.ready) return;
   const token = ++state.countdownToken;
   setCaptureStatus('countdown', '준비 완료', {
-    detail: '곧 카운트다운이 시작됩니다',
+    detail: '그대로 서 있어 주세요',
     metrics: state.lastReadiness,
   });
   playCaptureCue('ready');
@@ -612,9 +612,16 @@ function handleRecordingMonitor(readiness, now) {
       : state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
         ? '최소 권장 횟수 충족 · 운동이 끝났나요? 잠시 서 있어 주세요'
         : elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs
-          ? '처음 2초 준비자세를 기록하고 있습니다'
+          ? '정면을 보고 2초만 그대로 서 있어 주세요'
           : '8회 권장 · 최소 6회';
-    setCaptureStatus(`recording_${state.roughRepCount}`, `● 촬영 중${countText}`, { detail });
+    const justStarted = elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs
+      && elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs + 1400
+      && state.roughRepCount === 0;
+    setCaptureStatus(
+      justStarted ? 'recording_start' : `recording_${state.roughRepCount}`,
+      justStarted ? '시작하세요!' : `● 촬영 중${countText}`,
+      { detail: justStarted ? '8회 권장 · 최소 6회' : detail },
+    );
   } else if (state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps) {
     state.invalidExitSamples += 1;
     if (state.invalidExitSamples >= SOLO_CAPTURE_CONFIG.invalidExitSamples) {
@@ -643,12 +650,16 @@ function handleMonitorLandmarks(landmarks, now) {
     return;
   }
   state.readinessReadySince ||= now;
-  state.readinessCompletedAt ||= now;
-  setCaptureStatus('ready', '위치 조정', {
-    detail: '그 자리에서 잠시 서 주세요',
+  const readyElapsedMs = now - state.readinessReadySince;
+  const readySecondsLeft = Math.max(1, Math.ceil((SOLO_CAPTURE_CONFIG.readyHoldMs - readyElapsedMs) / 1000));
+  setCaptureStatus('ready_hold', '준비 자세 확인 중', {
+    detail: `정면을 보고 ${readySecondsLeft}초만 가만히 서 주세요`,
     metrics: readiness,
   });
-  if (now - state.readinessReadySince >= SOLO_CAPTURE_CONFIG.readyHoldMs) void beginSoloCountdown();
+  if (readyElapsedMs >= SOLO_CAPTURE_CONFIG.readyHoldMs) {
+    state.readinessCompletedAt ||= now;
+    void beginSoloCountdown();
+  }
 }
 
 async function startCaptureMonitor() {
@@ -746,7 +757,7 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(stopButton, false);
   playCaptureCue('start');
   setCaptureStatus('recording_initial_stand', '● 촬영 중', {
-    detail: automatic ? '처음 2초 준비자세를 기록하고 있습니다' : '준비자세부터 시작해 주세요',
+    detail: automatic ? '정면을 보고 2초만 그대로 서 있어 주세요' : '준비자세부터 시작해 주세요',
   });
 }
 
@@ -1059,9 +1070,15 @@ def clean(value):
         return value
     return str(value)
 
+def is_js_null(value):
+    return value is None or type(value).__name__ == 'JsNull'
+
 cal_raw = WEB_INPUT['calibration']
-calibration = None if cal_raw is None else tuple(float(x) for x in cal_raw)
-adj_raw = int(WEB_INPUT['adj_merge'])
+calibration = None if is_js_null(cal_raw) else tuple(float(x) for x in cal_raw)
+try:
+    adj_raw = 0 if is_js_null(WEB_INPUT['adj_merge']) else int(WEB_INPUT['adj_merge'])
+except (TypeError, ValueError):
+    adj_raw = 0
 adj_merge = None if adj_raw == 0 else adj_raw
 result = engine.analyze_mediapipe(
     WEB_INPUT['frames'], int(WEB_INPUT['width']), int(WEB_INPUT['height']),
