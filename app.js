@@ -30,8 +30,6 @@ const state = {
   facingMode: 'user',
   capturePhase: 'idle',
   captureStatusKey: null,
-  lastSpokenText: null,
-  lastSpokenAt: 0,
   captureMonitorTimer: null,
   captureMonitorActive: false,
   captureMonitorBusy: false,
@@ -58,8 +56,6 @@ const state = {
   lastGoodCaptureSeconds: 0,
   lastStationaryCaptureSeconds: 0,
   invalidExitSamples: 0,
-  startCueSpoken: false,
-  finishCueSpoken: false,
   cameraRequestedAt: null,
   cameraReadyAt: null,
   readinessCompletedAt: null,
@@ -77,6 +73,8 @@ const countdown = $('#countdown');
 const recordBadge = $('#record-badge');
 const recordTime = $('#record-time');
 const captureStatus = $('#capture-status');
+const captureStatusMain = $('#capture-status-main');
+const captureStatusDetail = $('#capture-status-detail');
 const cameraStage = $('#camera-stage');
 const previewOverlay = $('#preview-overlay');
 const facingControl = $('#facing-control');
@@ -113,7 +111,6 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
   squatExitRatio: 0.90,
   exitFootMove: 0.035,
   invalidExitSamples: 2,
-  guidanceRepeatMs: 3000,
 });
 
 function setHidden(element, hidden) {
@@ -219,12 +216,7 @@ function showAnalysisError(error) {
   $('.analysis-retry').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
 }
 
-function setCaptureStatus(key, message, {
-  speak = false,
-  speechText = message,
-  repeatSpeakMs = 0,
-  metrics = null,
-} = {}) {
+function setCaptureStatus(key, main, { detail = '', metrics = null } = {}) {
   const changed = state.captureStatusKey !== key;
   if (changed) {
     console.info('[solo-capture]', {
@@ -236,26 +228,17 @@ function setCaptureStatus(key, message, {
     state.captureStatusKey = key;
   }
   state.capturePhase = key;
-  captureStatus.textContent = message;
+  captureStatusMain.textContent = main;
+  captureStatusDetail.textContent = detail;
+  setHidden(captureStatusDetail, !detail);
   setHidden(captureStatus, false);
-  if (speak) {
-    const now = performance.now();
-    const differentSpeech = state.lastSpokenText !== speechText;
-    const repeatDue = repeatSpeakMs > 0 && now - state.lastSpokenAt >= repeatSpeakMs;
-    if (differentSpeech || repeatDue) {
-      state.lastSpokenText = speechText;
-      state.lastSpokenAt = now;
-      speakCapture(speechText);
-    }
-  }
 }
 
 function hideCaptureStatus() {
   state.captureStatusKey = null;
   state.capturePhase = 'idle';
-  state.lastSpokenText = null;
-  state.lastSpokenAt = 0;
-  captureStatus.textContent = '';
+  captureStatusMain.textContent = '';
+  captureStatusDetail.textContent = '';
   setHidden(captureStatus, true);
 }
 
@@ -267,27 +250,32 @@ async function ensureAudioReady() {
   if (state.audioContext.state === 'suspended') await state.audioContext.resume().catch(() => {});
 }
 
-function playCountdownBeep() {
+function playTone(frequency, startsInSeconds, durationSeconds, peak = 0.18) {
   if (!state.audioEnabled || !state.audioContext) return;
   const context = state.audioContext;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
-  oscillator.frequency.value = 880;
-  gain.gain.setValueAtTime(0.0001, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.16);
+  const start = context.currentTime + startsInSeconds;
+  oscillator.frequency.value = frequency;
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(peak, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + durationSeconds);
   oscillator.connect(gain).connect(context.destination);
-  oscillator.start();
-  oscillator.stop(context.currentTime + 0.18);
+  oscillator.start(start);
+  oscillator.stop(start + durationSeconds + 0.02);
 }
 
-function speakCapture(message) {
-  if (!state.audioEnabled || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = 'ko-KR';
-  utterance.rate = 1;
-  window.speechSynthesis.speak(utterance);
+function playCaptureCue(kind) {
+  if (kind === 'ready') playTone(620, 0, 0.11);
+  if (kind === 'countdown') playTone(840, 0, 0.10, 0.2);
+  if (kind === 'start') {
+    playTone(660, 0, 0.10);
+    playTone(990, 0.13, 0.14, 0.22);
+  }
+  if (kind === 'complete') {
+    playTone(990, 0, 0.12, 0.2);
+    playTone(660, 0.15, 0.20, 0.2);
+  }
 }
 
 async function requestWakeLock() {
@@ -417,10 +405,10 @@ async function enableCamera() {
     cameraButton.textContent = '카메라 다시 연결';
     await requestWakeLock();
     if (state.captureMode === 'solo') {
-      setCaptureStatus('loading_detector', '준비 감지 도구를 불러오고 있습니다');
+      setCaptureStatus('loading_detector', '위치 조정', { detail: '준비 감지를 불러오고 있습니다' });
       await startCaptureMonitor();
     } else {
-      setCaptureStatus('assisted_ready', '촬영자가 시작 버튼을 눌러 주세요');
+      setCaptureStatus('assisted_ready', '위치 조정', { detail: '촬영자가 화면을 확인한 뒤 시작하세요' });
     }
   } catch (error) {
     stopStream();
@@ -518,18 +506,8 @@ function medianNumber(values) {
 }
 
 function setReadinessStatus(readiness) {
-  const speechText = {
-    no_person: '화면 안으로 들어와 주세요',
-    feet_cut: '조금 뒤로 가 주세요',
-    head_cut: '조금 뒤로 가 주세요',
-    too_close: '조금 뒤로 가 주세요',
-    too_far: '조금 앞으로 와 주세요',
-    edge: '화면 가운데로 와 주세요',
-  }[readiness.key];
-  setCaptureStatus(readiness.key, readiness.message, {
-    speak: Boolean(speechText),
-    speechText,
-    repeatSpeakMs: SOLO_CAPTURE_CONFIG.guidanceRepeatMs,
+  setCaptureStatus(readiness.key, '위치 조정', {
+    detail: readiness.message,
     metrics: readiness,
   });
 }
@@ -550,16 +528,21 @@ function cancelSoloCountdown(readiness) {
 async function beginSoloCountdown() {
   if (state.capturePhase === 'countdown' || !state.lastReadiness?.ready) return;
   const token = ++state.countdownToken;
-  setCaptureStatus('countdown', '준비되었습니다', { speak: true, metrics: state.lastReadiness });
-  setHidden(countdown, false);
+  setCaptureStatus('countdown', '준비 완료', {
+    detail: '곧 카운트다운이 시작됩니다',
+    metrics: state.lastReadiness,
+  });
+  playCaptureCue('ready');
+  await sleep(400);
   for (let value = SOLO_CAPTURE_CONFIG.countdownSeconds; value >= 1; value -= 1) {
     if (token !== state.countdownToken || !state.captureMonitorActive) return;
     if (!state.lastReadiness?.ready) {
       cancelSoloCountdown(state.lastReadiness || { key: 'moving', message: '그 자리에서 가만히 서 주세요' });
       return;
     }
+    setHidden(countdown, false);
     countdown.textContent = String(value);
-    playCountdownBeep();
+    playCaptureCue('countdown');
     await sleep(1000);
   }
   if (token !== state.countdownToken || !state.lastReadiness?.ready) {
@@ -575,15 +558,17 @@ function handleRecordingMonitor(readiness, now) {
   const elapsedSeconds = Math.max(0, elapsedMs / 1000);
   if (readiness.frameComplete && finite(readiness.hipAnkle)) {
     state.invalidExitSamples = 0;
-    if (elapsedMs <= SOLO_CAPTURE_CONFIG.initialStandMs + 400) {
+    if (elapsedMs <= SOLO_CAPTURE_CONFIG.initialStandMs + 400 && !state.inSquat) {
       state.standBaselineSamples.push(readiness.hipAnkle);
     }
+    const provisionalBaseline = medianNumber(state.standBaselineSamples);
     if (!finite(state.standBaseline) && elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs) {
-      state.standBaseline = medianNumber(state.standBaselineSamples);
+      state.standBaseline = provisionalBaseline;
       console.info('[solo-capture] standing baseline', { value: state.standBaseline, samples: state.standBaselineSamples.length });
     }
-    const ratio = finite(state.standBaseline) && state.standBaseline > 0
-      ? readiness.hipAnkle / state.standBaseline
+    const activeBaseline = finite(state.standBaseline) ? state.standBaseline : provisionalBaseline;
+    const ratio = finite(activeBaseline) && activeBaseline > 0
+      ? readiness.hipAnkle / activeBaseline
       : null;
     if (finite(readiness.footMotion) && readiness.footMotion <= SOLO_CAPTURE_CONFIG.footStableMaxMove) {
       state.lastStationaryCaptureSeconds = elapsedSeconds;
@@ -600,18 +585,6 @@ function handleRecordingMonitor(readiness, now) {
       return;
     }
     state.lastGoodCaptureSeconds = elapsedSeconds;
-    if (elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs) {
-      setCaptureStatus('recording_initial_stand', '2초 동안 그대로 서세요');
-      return;
-    }
-    if (!state.startCueSpoken) {
-      state.startCueSpoken = true;
-      setCaptureStatus('recording_start', '시작하세요 · 8회 권장', {
-        speak: true,
-        speechText: '시작하세요',
-      });
-      return;
-    }
     if (finite(ratio)) {
       if (!state.inSquat && ratio < SOLO_CAPTURE_CONFIG.squatEnterRatio) {
         state.inSquat = true;
@@ -633,17 +606,15 @@ function handleRecordingMonitor(readiness, now) {
         return;
       }
     }
-    const finishCue = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps && !state.finishCueSpoken;
-    if (finishCue) state.finishCueSpoken = true;
-    const message = state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
-      ? `약 ${state.roughRepCount}회 · 끝났으면 2초 서세요`
-      : state.roughRepCount > 0
-        ? `약 ${state.roughRepCount}회 · 계속하세요`
-        : '시작하세요 · 8회 권장';
-    setCaptureStatus(`recording_${state.roughRepCount}`, message, {
-      speak: finishCue,
-      speechText: '다 하셨으면 제자리에서 2초 서 계세요',
-    });
+    const countText = state.roughRepCount > 0 ? ` · 약 ${state.roughRepCount}회` : '';
+    const detail = state.roughRepCount >= 8
+      ? '권장 횟수 충족 · 운동이 끝났나요? 잠시 서 있어 주세요'
+      : state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
+        ? '최소 권장 횟수 충족 · 운동이 끝났나요? 잠시 서 있어 주세요'
+        : elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs
+          ? '처음 2초 준비자세를 기록하고 있습니다'
+          : '8회 권장 · 최소 6회';
+    setCaptureStatus(`recording_${state.roughRepCount}`, `● 촬영 중${countText}`, { detail });
   } else if (state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps) {
     state.invalidExitSamples += 1;
     if (state.invalidExitSamples >= SOLO_CAPTURE_CONFIG.invalidExitSamples) {
@@ -673,7 +644,10 @@ function handleMonitorLandmarks(landmarks, now) {
   }
   state.readinessReadySince ||= now;
   state.readinessCompletedAt ||= now;
-  setCaptureStatus('ready', '준비되었습니다', { metrics: readiness });
+  setCaptureStatus('ready', '위치 조정', {
+    detail: '그 자리에서 잠시 서 주세요',
+    metrics: readiness,
+  });
   if (now - state.readinessReadySince >= SOLO_CAPTURE_CONFIG.readyHoldMs) void beginSoloCountdown();
 }
 
@@ -715,7 +689,9 @@ async function startCaptureMonitor() {
     void tick();
   } catch (error) {
     console.error('[solo-capture] detector setup failed', error);
-    setCaptureStatus('detector_error', '준비 감지를 시작할 수 없습니다 · 다른 사람이 촬영을 선택해 주세요');
+    setCaptureStatus('detector_error', '위치 조정', {
+      detail: '준비 감지를 시작할 수 없습니다. 다른 사람이 촬영을 선택해 주세요',
+    });
   }
 }
 
@@ -743,8 +719,6 @@ async function beginRecording({ automatic = false } = {}) {
   state.lastGoodCaptureSeconds = 0;
   state.lastStationaryCaptureSeconds = 0;
   state.invalidExitSamples = 0;
-  state.startCueSpoken = false;
-  state.finishCueSpoken = false;
   state.captureRecordMeta = {
     mode: state.captureMode,
     facingMode: state.facingMode,
@@ -770,9 +744,9 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(cameraButton, true);
   setHidden(facingControl, true);
   setHidden(stopButton, false);
-  setCaptureStatus('recording_initial_stand', automatic ? '2초 동안 그대로 서세요' : '촬영 중 · 준비자세부터 시작해 주세요', {
-    speak: automatic,
-    speechText: automatic ? '그대로 2초 서 계세요' : undefined,
+  playCaptureCue('start');
+  setCaptureStatus('recording_initial_stand', '● 촬영 중', {
+    detail: automatic ? '처음 2초 준비자세를 기록하고 있습니다' : '준비자세부터 시작해 주세요',
   });
 }
 
@@ -796,7 +770,8 @@ async function stopRecording({ reason = 'manual', analysisEndSeconds = null } = 
     state.captureRecordMeta.stopReason = reason;
     state.captureRecordMeta.analysisEndSeconds = endSeconds;
   }
-  setCaptureStatus('capture_complete', '촬영 완료 · 휴대폰으로 와 주세요', { speak: true });
+  setCaptureStatus('capture_complete', '촬영 완료', { detail: '휴대폰으로 와 주세요' });
+  playCaptureCue('complete');
   try {
     const stopped = once(state.recorder, 'stop', 'error', 10000);
     state.recorder.stop();
@@ -2080,8 +2055,6 @@ function restart({ preserveRetry = false } = {}) {
   state.cameraSettings = null;
   state.lastGoodCaptureSeconds = 0;
   state.lastStationaryCaptureSeconds = 0;
-  state.startCueSpoken = false;
-  state.finishCueSpoken = false;
   state.comparisonMetric = null;
   state.comparison = null;
   if (!preserveRetry) {
@@ -2130,9 +2103,8 @@ facingSelect.addEventListener('change', () => { state.facingMode = facingSelect.
 soundToggle.addEventListener('click', async () => {
   state.audioEnabled = !state.audioEnabled;
   soundToggle.setAttribute('aria-pressed', String(state.audioEnabled));
-  soundToggle.textContent = state.audioEnabled ? '소리 안내 켜짐' : '소리 안내 꺼짐';
+  soundToggle.textContent = state.audioEnabled ? '효과음 켜짐' : '효과음 꺼짐';
   if (state.audioEnabled) await ensureAudioReady();
-  else window.speechSynthesis?.cancel?.();
 });
 $('#restart-button').addEventListener('click', () => restart());
 $('#retake-button').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
