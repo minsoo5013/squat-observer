@@ -12,6 +12,19 @@
     "excluded": "내전근 스트레칭·둔근 활성화(자동 추천 제외 규칙), 짝 운동(00993 누워 발목 당겨주기 — 보조자 동작 포함), 어르신 전용, 점프 동작"
   },
   "rules": {
+    "lower_body_reference": {
+      "label": "참고할 하지 운동",
+      "items": [
+        {
+          "catalog_id": "0AUDLJ08S_00519",
+          "title": "앉았다 일어서기-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00519.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00519/0AUDLJ08S_00519_SC_00003.jpeg",
+          "duration_seconds": 69,
+          "description": "국민체력100에서 제공하는 하지 운동 콘텐츠입니다."
+        }
+      ]
+    },
     "knee_width_decrease": {
       "label": "무릎 간격 변화와 관련된 발목·종아리 스트레칭 콘텐츠",
       "items": [

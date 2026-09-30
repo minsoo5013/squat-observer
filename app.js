@@ -1914,6 +1914,33 @@ function renderRecommendations() {
   });
 }
 
+function renderLowerExercise() {
+  const section = $('#lower-exercise-section');
+  const group = state.recommendations?.rules?.lower_body_reference;
+  const item = group?.items?.[0];
+  const show = state.result?.result_usable !== false && Boolean(item);
+  setHidden(section, !show);
+  if (!show) {
+    $('#lower-exercise-card').replaceChildren();
+    return;
+  }
+  const card = $('#lower-exercise-card');
+  card.innerHTML = `
+    <article class="lower-exercise-card">
+      <div class="lower-exercise-media">
+        <video controls playsinline preload="metadata" src="${escapeHtml(item.video_url)}"${item.thumbnail_url ? ` poster="${escapeHtml(item.thumbnail_url)}"` : ''}></video>
+      </div>
+      <div class="lower-exercise-body">
+        <span class="lower-exercise-tag">하지 운동 · 참고</span>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p class="lower-exercise-meta">${Math.round(item.duration_seconds)}초</p>
+        <a class="recommend-link" href="${escapeHtml(item.video_url)}" target="_blank" rel="noopener noreferrer">재생이 안 되면 새 탭에서 보기</a>
+      </div>
+    </article>
+  `;
+  card.querySelector('video')?.addEventListener('error', () => card.querySelector('.lower-exercise-card')?.classList.add('media-error'));
+}
+
 function renderNotices() {
   const warnings = state.result.warnings || [];
   const labels = { info: '안내', warn: '확인', error: '분석 보류' };
@@ -2177,6 +2204,7 @@ async function renderResults() {
   await renderEvidence(state.selectedRep);
   await renderComparison();
   renderRecommendations();
+  renderLowerExercise();
   renderRetry();
   renderTechnical();
   await renderVerify();
