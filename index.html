@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20260930-solo-cues">
+  <link rel="stylesheet" href="./styles.css?v=20260930-results-layout">
 </head>
 <body>
   <header class="site-header">
@@ -114,13 +114,13 @@
       </div>
     </section>
 
-    <section class="home-section limits-section">
-      <div class="home-section-heading"><h2>이 서비스가 하지 않는 것</h2></div>
+    <section class="home-section limits-section service-observes">
+      <div class="home-section-heading"><h2>이 서비스가 보는 것</h2></div>
       <ul>
-        <li>몸 상태를 진단하거나 자세에 우열과 순위를 매기지 않습니다.</li>
-        <li>관찰된 변화의 원인을 단정하지 않습니다.</li>
-        <li>영상과 관절 좌표를 서버로 보내지 않습니다.</li>
-        <li>정면 영상에서 보이는 반복 사이의 변화만 다룹니다.</li>
+        <li>같은 사람의 반복끼리 비교합니다.</li>
+        <li>달랐던 회차를 원본 장면으로 보여 줍니다.</li>
+        <li>국민체력100 콘텐츠로 이어집니다.</li>
+        <li>영상은 기기 안에서만 처리합니다.</li>
       </ul>
     </section>
 
@@ -148,19 +148,21 @@
       <div class="capture-layout">
         <article class="camera-card">
           <div class="camera-stage" id="camera-stage">
-            <video id="preview-video" playsinline muted></video>
-            <canvas id="preview-overlay" aria-hidden="true"></canvas>
-            <div class="camera-placeholder" id="camera-placeholder">
-              <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-              <strong id="camera-placeholder-title">혼자 촬영 준비</strong>
-              <small id="camera-placeholder-detail">휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.</small>
+            <div class="camera-preview" id="camera-preview">
+              <video id="preview-video" playsinline muted></video>
+              <canvas id="preview-overlay" aria-hidden="true"></canvas>
+              <div class="camera-placeholder" id="camera-placeholder">
+                <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                <strong id="camera-placeholder-title">혼자 촬영 준비</strong>
+                <small id="camera-placeholder-detail">휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.</small>
+              </div>
+              <div class="record-badge" id="record-badge" hidden><span></span> <b id="record-time">00:00</b></div>
+              <div class="countdown" id="countdown" hidden></div>
             </div>
             <div class="capture-status" id="capture-status" role="status" aria-live="polite" hidden>
               <strong id="capture-status-main"></strong>
               <span id="capture-status-detail"></span>
             </div>
-            <div class="record-badge" id="record-badge" hidden><span></span> 녹화 중 <b id="record-time">00:00</b></div>
-            <div class="countdown" id="countdown" hidden></div>
           </div>
           <div class="camera-controls">
             <button class="button button-primary" id="camera-button">전면 카메라 시작</button>
@@ -217,7 +219,9 @@
         <button class="button button-primary" id="retake-button">다른 영상 선택하기</button>
       </section>
       <div id="usable-result">
+        <p class="result-lead" id="result-lead"></p>
         <div class="result-summary" id="result-summary"></div>
+        <div class="result-flow" id="result-flow"></div>
         <p class="low-rep-note" id="low-rep-note" hidden>6회 이상 하면 후반 변화까지 비교할 수 있습니다.</p>
         <section class="rep-charts" aria-labelledby="rep-charts-title">
           <div class="rep-charts-heading">
@@ -265,7 +269,7 @@
         <section class="retry-card" id="retry-section" hidden>
           <div class="retry-copy">
             <p class="card-label">한 세트 더 확인</p>
-            <h3>같은 촬영 조건에서 다시 비교할 수 있습니다.</h3>
+            <h3>같은 조건으로 한 세트를 더 하면 직전 세트와 무릎 간격·깊이를 비교합니다.</h3>
             <p id="retry-context"></p>
             <p class="retry-lock-warning"><b>첫 세트와 같은 폰 위치, 같은 발 위치·발 간격으로 서 주세요.</b> 발 간격이 달라지면 무릎 간격 값도 달라집니다.</p>
             <div class="retry-warmup" id="retry-warmup"></div>
@@ -298,10 +302,10 @@
       <div><dt>문의</dt><dd>운영주체 이민수</dd></div>
     </dl>
     <p class="footer-license">외부 구성요소: MediaPipe·Tasks Vision(Apache 2.0), Pyodide(MPL 2.0) · 공단 콘텐츠: 공공누리 제1유형 · <a href="./NOTICE">자세한 라이선스 고지</a></p>
-    <p class="footer-note">운동 수행의 반복별 변화를 관찰하는 정보 서비스이며 의료 서비스가 아닙니다.</p>
+    <p class="footer-note">정면 영상에 보이는 같은 사람의 반복 변화만 관찰합니다. 변화의 원인이나 의학적 상태를 판단하는 서비스가 아닙니다.</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20260930-safari-capture-fix"></script>
+  <script type="module" src="./app.js?v=20260930-results-layout"></script>
 </body>
 </html>

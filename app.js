@@ -90,6 +90,11 @@ const CONNECTIONS = [
 
 const MAX_VIDEO_SECONDS = 90;
 
+const NEUTRAL_RETRY_TARGETS = Object.freeze([
+  ['A1_knee_ankle_w', 'higher', [['A45_knee_in_mean', 'lower']], 'A2_knee_w_rel_stand'],
+  ['D1_hip_ankle_rel', 'lower', [], 'D1_hip_ankle_rel'],
+]);
+
 // 촬영 보조용 잠정값. run63의 한 영상에 맞추지 않도록 몸 높이·정지 범위를 넓게 두었다.
 // 자세 판정에는 사용하지 않으며 실기기 로그를 모은 뒤 별도로 재검토한다.
 const SOLO_CAPTURE_CONFIG = Object.freeze({
@@ -1202,17 +1207,67 @@ function extremeRep(key, mode = 'min') {
 }
 
 function renderSummary() {
-  const knee = extremeRep('A2_knee_w_rel_stand', 'min');
+  const kneeNarrow = extremeRep('A2_knee_w_rel_stand', 'min');
+  const kneeWide = extremeRep('A2_knee_w_rel_stand', 'max');
   const deep = extremeRep('D1_hip_ankle_rel', 'min');
+  const shallow = extremeRep('D1_hip_ankle_rel', 'max');
   const usableCount = state.result.per_rep.filter((_, index) => repUsable(index)).length;
+  const kneeValues = metricValues('A2_knee_w_rel_stand');
+  const depthValues = state.result.per_rep
+    .map((rep, index) => (repUsable(index) && finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null))
+    .filter(finite);
+  const timingValues = rhythmValues().filter(finite);
+  const averageDepth = mean(depthValues);
+  const averageRhythm = mean(timingValues);
+  const kneeMinimum = kneeValues.length ? Math.min(...kneeValues) : Number.NaN;
+  const kneeMaximum = kneeValues.length ? Math.max(...kneeValues) : Number.NaN;
+  const primary = primaryFeedback();
   $('#result-title').textContent = `${state.result.n_reps}회의 저점 장면을 나누어 보았습니다.`;
+  $('#result-lead').textContent = primary
+    ? feedbackSentence(primary)
+    : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
   $('#result-summary').innerHTML = `
-    <div class="summary-chip"><small>구분된 반복</small><strong>${state.result.n_reps}회 · 값에 사용 ${usableCount}회</strong></div>
-    <div class="summary-chip"><small>준비자세 대비 가장 좁은 무릎 간격</small><strong>${knee.index >= 0 ? `${knee.index + 1}회차 · ${multiple(knee.value)}` : '확인 어려움'}</strong></div>
-    <div class="summary-chip"><small>세트 안 깊이 순서</small><strong>${deep.index >= 0 ? `${deep.index + 1}회차가 가장 깊음` : '확인 어려움'}</strong></div>
+    <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수 · 값에 사용 ${usableCount}회</small></div>
+    <div class="summary-chip"><strong>${finite(averageDepth) ? `평균 ${percent(averageDepth)} 내려감` : '확인 어려움'}</strong><small>평균 깊이</small></div>
+    <div class="summary-chip"><strong>${finite(kneeMinimum) && finite(kneeMaximum) ? `${kneeMinimum.toFixed(1)}~${kneeMaximum.toFixed(1)}배` : '확인 어려움'}</strong><small>무릎 간격 범위 · 준비자세 대비</small></div>
+    <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬 · 참고</small></div>
+  `;
+  const rows = state.result.per_rep
+    .map((rep, index) => ({
+      index,
+      knee: repUsable(index) && finite(rep.A2_knee_w_rel_stand) ? rep.A2_knee_w_rel_stand : null,
+      depth: repUsable(index) && finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null,
+    }))
+    .filter((row) => finite(row.knee) && finite(row.depth));
+  const half = Math.floor(rows.length / 2);
+  const early = rows.slice(0, half);
+  const late = half ? rows.slice(-half) : [];
+  const kneeDelta = half ? mean(late.map((row) => row.knee)) - mean(early.map((row) => row.knee)) : Number.NaN;
+  const depthDelta = half ? mean(late.map((row) => row.depth)) - mean(early.map((row) => row.depth)) : Number.NaN;
+  const extremeSentence = deep.index >= 0 && shallow.index >= 0 && kneeWide.index >= 0 && kneeNarrow.index >= 0
+    ? `가장 깊었던 회차는 ${deep.index + 1}회차, 가장 얕았던 회차는 ${shallow.index + 1}회차입니다. 무릎 간격은 ${kneeWide.index + 1}회차가 가장 넓고 ${kneeNarrow.index + 1}회차가 가장 좁았습니다.`
+    : '확인할 수 있는 회차의 흐름만 표시합니다.';
+  const depthSentence = finite(depthDelta)
+    ? Math.round(Math.abs(depthDelta * 100)) === 0
+      ? `후반 ${half}회와 초반 ${half}회의 평균 깊이는 같았습니다.`
+      : `후반 ${half}회는 초반보다 평균 ${Math.abs(depthDelta * 100).toFixed(0)}%p ${depthDelta > 0 ? '더' : '덜'} 내려갔습니다.`
+    : '초반과 후반의 평균 깊이를 비교하기에 회차가 부족합니다.';
+  const kneeSentence = finite(kneeDelta)
+    ? Number(Math.abs(kneeDelta).toFixed(1)) === 0
+      ? `후반 ${half}회와 초반 ${half}회의 평균 무릎 간격은 소수점 한 자리에서 같게 보였습니다.`
+      : `후반 ${half}회는 초반보다 무릎 간격이 평균 ${Math.abs(kneeDelta).toFixed(1)}배 ${kneeDelta > 0 ? '넓게' : '좁게'} 보였습니다.`
+    : '';
+  $('#result-flow').innerHTML = `
+    <p>${escapeHtml(extremeSentence)}</p>
+    <p>${escapeHtml([depthSentence, kneeSentence].filter(Boolean).join(' '))}${primary ? '' : ' 관찰 알림을 띄울 만큼의 변화는 아니었습니다.'}</p>
   `;
   setHidden($('#low-rep-note'), !(state.result.n_reps >= 4 && state.result.n_reps <= 5));
-  return { knee, deep };
+  return { knee: kneeNarrow, deep };
+}
+
+function mean(values) {
+  const usable = values.filter(finite);
+  return usable.length ? usable.reduce((sum, value) => sum + value, 0) / usable.length : Number.NaN;
 }
 
 function median(values) {
@@ -1224,6 +1279,15 @@ function median(values) {
 
 function orderedFeedback() {
   return [...(state.result.feedback || [])].sort((a, b) => Number(Boolean(b.primary)) - Number(Boolean(a.primary)));
+}
+
+function retryTargetsForResult() {
+  const targets = state.result.retry_targets || [];
+  return targets.length ? targets : NEUTRAL_RETRY_TARGETS;
+}
+
+function neutralRetryForResult() {
+  return !(state.result.retry_targets || []).length;
 }
 
 function feedbackForRep(index) {
@@ -1312,7 +1376,7 @@ function renderBarChart({
       </button>`;
   }).join('');
   return `
-    <article class="rep-bar-chart ${reference ? 'reference' : ''}">
+    <article class="rep-bar-chart family-${escapeHtml(family)} ${reference ? 'reference' : ''}">
       <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4>${reference ? '<b class="reference-badge">참고</b>' : ''}<span>${escapeHtml(detail)}</span>${help ? `<details class="chart-help"><summary aria-label="${escapeHtml(title)} 읽는 법">ⓘ 읽는 법</summary><p>${escapeHtml(help)}</p></details>` : ''}</div>
       ${summary ? `<p class="rep-bar-summary">${escapeHtml(summary)}</p>` : ''}
       <div class="rep-bar-stage">
@@ -1730,6 +1794,17 @@ function medianReferenceIndex(metric, targetIndex) {
   )).index;
 }
 
+function representativeRepIndex(metric) {
+  const candidates = state.result.per_rep
+    .map((rep, index) => ({ index, value: rep[metric] }))
+    .filter((item) => repUsable(item.index) && finite(item.value));
+  if (!candidates.length) return nearestUsableRep(state.result, 0);
+  const middle = median(candidates.map((item) => item.value));
+  return candidates.reduce((best, item) => (
+    Math.abs(item.value - middle) < Math.abs(best.value - middle) ? item : best
+  )).index;
+}
+
 function comparisonMetricMeta(metric) {
   if (metric === 'D1_hip_ankle_rel') {
     return { label: '골반이 내려간 정도', detail: '100% − 골반–발목 세로거리', value: (raw) => 1 - raw, format: (value) => `${percent(value)} 내려감` };
@@ -1883,12 +1958,15 @@ function primaryEvidenceRep() {
 }
 
 async function startRetry() {
-  const targets = state.result.retry_targets || [];
+  const targets = retryTargetsForResult();
   if (!targets.length) return;
+  const neutralComparison = neutralRetryForResult();
   const evidence = {};
   for (const [metric, , , source] of targets) {
     const feedback = (state.result.feedback || []).find((item) => item.metric === (source || metric));
-    const preferred = Math.max(0, Number(feedback?.reps?.[0] || 1) - 1);
+    const preferred = feedback
+      ? Math.max(0, Number(feedback.reps?.[0] || 1) - 1)
+      : representativeRepIndex(metric);
     const repIndex = nearestUsableRep(state.result, preferred);
     if (repIndex < 0) continue;
     const canvas = document.createElement('canvas');
@@ -1900,6 +1978,7 @@ async function startRetry() {
     targets: JSON.parse(JSON.stringify(targets)),
     evidence,
     sourceName: state.sourceName,
+    neutralComparison,
   };
   state.comparison = null;
   const continueSample = Boolean(state.samplePair && state.samplePhase === 1);
@@ -1914,14 +1993,14 @@ async function startRetry() {
 }
 
 function renderRetry() {
-  const targets = state.result.retry_targets || [];
+  const targets = retryTargetsForResult();
   const show = state.result.result_usable !== false && targets.length > 0 && !state.retrySession;
   setHidden($('#retry-section'), !show);
   if (!show) return;
   const primary = primaryFeedback();
   $('#retry-context').textContent = primary
     ? `${primary.text} 같은 조건으로 한 세트를 더 촬영하면 직전 세트와 변화 방향을 비교합니다.`
-    : '같은 조건으로 한 세트를 더 촬영하면 직전 세트와 변화 방향을 비교합니다.';
+    : '같은 조건으로 한 세트를 더 하면 직전 세트와 무릎 간격·깊이를 비교합니다.';
 
   const warmup = state.recommendations?.rules?.before_next_set;
   const item = warmup?.items?.[0];
@@ -1956,17 +2035,23 @@ async function renderVerify() {
   }
   setHidden(section, false);
   const rows = state.comparison;
+  const neutralComparison = Boolean(state.retrySession.neutralComparison);
   $('#verify-results').innerHTML = rows.map((row, index) => {
     const previousEvidence = state.retrySession.evidence[row.metric];
     const currentIndex = nearestUsableRep(state.result, previousEvidence?.repIndex ?? 0);
     const hasEvidence = previousEvidence && currentIndex >= 0;
-    const verdictClass = row.verdict === '악화' ? 'worse' : (row.verdict === '비교불가' ? 'unavailable' : '');
+    const neutralView = neutralComparison ? neutralComparisonCopy(row) : null;
+    const verdictClass = row.verdict === '비교불가'
+      ? 'unavailable'
+      : neutralComparison
+        ? 'neutral'
+        : row.verdict === '악화' ? 'worse' : '';
     const reasons = row.reasons || [];
     const cautions = row.cautions || [];
     return `
       <article class="verify-result">
-        <div class="verify-result-head"><h3>${escapeHtml(row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(row.display)}</span></div>
-        <p class="verify-summary">${escapeHtml(row.summary)}</p>
+        <div class="verify-result-head"><h3>${escapeHtml(row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView?.display || row.display)}</span></div>
+        <p class="verify-summary">${escapeHtml(neutralView?.summary || row.summary)}</p>
         ${hasEvidence ? `<div class="verify-media">
           <div class="verify-shot"><small>직전 세트 · ${previousEvidence.repIndex + 1}회차 저점</small><img src="${previousEvidence.dataUrl}" alt="직전 세트의 저점 근거 장면"><strong>직전 세트 근거</strong></div>
           <div class="verify-shot"><small>새 세트 · ${currentIndex + 1}회차 저점</small><canvas id="verify-new-${index}"></canvas><strong>새 세트 근거</strong></div>
@@ -1984,6 +2069,26 @@ async function renderVerify() {
     const currentIndex = nearestUsableRep(state.result, previousEvidence?.repIndex ?? 0);
     if (currentIndex >= 0) await drawFrame(canvas, state.result.bottoms[currentIndex]);
   }
+}
+
+function neutralComparisonCopy(row) {
+  if (row.verdict === '비교불가') return { display: '비교 불가', summary: row.summary };
+  if (row.verdict === '유지') return { display: '비슷함', summary: '직전 세트와 비슷합니다.' };
+  if (row.metric === 'A1_knee_ankle_w') {
+    const wider = row.delta > 0;
+    return {
+      display: wider ? '넓어짐' : '좁아짐',
+      summary: `직전 세트보다 무릎 간격이 ${wider ? '넓어졌습니다' : '좁아졌습니다'}.`,
+    };
+  }
+  if (row.metric === 'D1_hip_ankle_rel') {
+    const deeper = row.delta < 0;
+    return {
+      display: deeper ? '더 깊게' : '덜 깊게',
+      summary: `직전 세트보다 ${deeper ? '더 깊게' : '덜'} 앉았습니다.`,
+    };
+  }
+  return { display: '변화 방향', summary: '직전 세트와의 변화 방향을 표시합니다.' };
 }
 
 function renderTechnical() {
