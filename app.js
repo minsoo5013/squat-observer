@@ -52,6 +52,8 @@ const state = {
   inSquat: false,
   standBaselineSamples: [],
   standBaseline: null,
+  recordingStartReadySince: null,
+  recordingStartSignalAt: null,
   finishStandSince: null,
   lastGoodCaptureSeconds: 0,
   lastStationaryCaptureSeconds: 0,
@@ -108,6 +110,8 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
   readyHoldMs: 2000,
   countdownSeconds: 3,
   initialStandMs: 2000,
+  startSignalReadyWindowMs: 1500,
+  startSignalDisplayMs: 1400,
   finishStandMs: 2000,
   maxRecordingMs: MAX_VIDEO_SECONDS * 1000,
   minAutoStopReps: 6,
@@ -448,7 +452,7 @@ function readinessFromLandmarks(landmarks, now) {
   if (!ankles.every((point) => monitorPointUsable(point))) return { ready: false, key: 'feet_cut', message: '발끝까지 보이도록 조금 뒤로 가 주세요', frameComplete: false };
   const core = [nose, ...shoulders, ...hips, ...knees, ...ankles];
   if (!core.every((point) => monitorPointUsable(point))) {
-    return { ready: false, key: 'weak_tracking', message: '조금 더 밝은 곳으로 이동해 정면으로 서 주세요', frameComplete: false };
+    return { ready: false, key: 'weak_tracking', message: '조금 더 밝은 곳으로 이동해 주세요', frameComplete: false };
   }
   const feet = toes.every((point) => monitorPointUsable(point)) ? toes : ankles;
   if (Math.max(...feet.map((point) => point.y)) > 0.98) {
@@ -561,6 +565,33 @@ async function beginSoloCountdown() {
 function handleRecordingMonitor(readiness, now) {
   const elapsedMs = now - state.recordingStartedAt;
   const elapsedSeconds = Math.max(0, elapsedMs / 1000);
+  const startReady = Boolean(readiness.ready && readiness.frameComplete);
+  if (!state.recordingStartSignalAt) {
+    if (startReady) state.recordingStartReadySince ||= now;
+    else state.recordingStartReadySince = null;
+
+    const readyWindowMs = state.recordingStartReadySince
+      ? now - state.recordingStartReadySince
+      : 0;
+    if (elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs
+      && readyWindowMs >= SOLO_CAPTURE_CONFIG.startSignalReadyWindowMs) {
+      state.recordingStartSignalAt = now;
+      console.info('[solo-capture] start signal ready', { elapsedSeconds, readyWindowMs });
+    }
+  }
+
+  if (!state.recordingStartSignalAt) {
+    setCaptureStatus(
+      startReady ? 'recording_waiting' : `recording_${readiness.key || 'adjust'}`,
+      startReady ? '● 촬영 중' : '위치 조정',
+      { detail: startReady ? '잠시 그대로 서 계세요' : readiness.message },
+    );
+  } else if (now - state.recordingStartSignalAt < SOLO_CAPTURE_CONFIG.startSignalDisplayMs) {
+    setCaptureStatus('recording_start', '시작하세요!', {
+      detail: '8회 권장 · 최소 6회',
+    });
+  }
+
   if (readiness.frameComplete && finite(readiness.hipAnkle)) {
     state.invalidExitSamples = 0;
     if (elapsedMs <= SOLO_CAPTURE_CONFIG.initialStandMs + 400 && !state.inSquat) {
@@ -616,17 +647,16 @@ function handleRecordingMonitor(readiness, now) {
       ? '권장 횟수 충족 · 운동이 끝났나요? 잠시 서 있어 주세요'
       : state.roughRepCount >= SOLO_CAPTURE_CONFIG.minAutoStopReps
         ? '최소 권장 횟수 충족 · 운동이 끝났나요? 잠시 서 있어 주세요'
-        : elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs
-          ? '정면을 보고 2초만 그대로 서 있어 주세요'
-          : '8회 권장 · 최소 6회';
-    const justStarted = elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs
-      && elapsedMs < SOLO_CAPTURE_CONFIG.initialStandMs + 1400
-      && state.roughRepCount === 0;
-    setCaptureStatus(
-      justStarted ? 'recording_start' : `recording_${state.roughRepCount}`,
-      justStarted ? '시작하세요!' : `● 촬영 중${countText}`,
-      { detail: justStarted ? '8회 권장 · 최소 6회' : detail },
-    );
+        : '8회 권장 · 최소 6회';
+    const showingStartSignal = state.recordingStartSignalAt
+      && now - state.recordingStartSignalAt < SOLO_CAPTURE_CONFIG.startSignalDisplayMs;
+    if (state.recordingStartSignalAt && !showingStartSignal) {
+      setCaptureStatus(
+        `recording_${state.roughRepCount}`,
+        `● 촬영 중${countText}`,
+        { detail },
+      );
+    }
   } else if (state.roughRepCount >= SOLO_CAPTURE_CONFIG.minExitStopReps) {
     state.invalidExitSamples += 1;
     if (state.invalidExitSamples >= SOLO_CAPTURE_CONFIG.invalidExitSamples) {
@@ -731,6 +761,8 @@ async function beginRecording({ automatic = false } = {}) {
   state.inSquat = false;
   state.standBaselineSamples = [];
   state.standBaseline = null;
+  state.recordingStartReadySince = null;
+  state.recordingStartSignalAt = null;
   state.finishStandSince = null;
   state.lastGoodCaptureSeconds = 0;
   state.lastStationaryCaptureSeconds = 0;
@@ -762,7 +794,7 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(stopButton, false);
   playCaptureCue('start');
   setCaptureStatus('recording_initial_stand', '● 촬영 중', {
-    detail: automatic ? '정면을 보고 2초만 그대로 서 있어 주세요' : '준비자세부터 시작해 주세요',
+    detail: automatic ? '잠시 그대로 서 계세요' : '준비자세부터 시작해 주세요',
   });
 }
 
