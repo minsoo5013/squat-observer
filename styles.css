@@ -690,3 +690,28 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
   .content-more-meta { grid-column: 1 / 2; white-space: normal; }
   .content-more li a { grid-column: 2 / 3; grid-row: 1 / span 2; align-self: center; }
 }
+
+/* 한 세트 더: 회차별 비교 그래프 */
+.verify-chart { margin: 14px 0 4px; padding: 12px 12px 10px; background: #fafbfb; border: 1px solid var(--line); border-radius: 5px; }
+.verify-chart svg { width: 100%; height: auto; display: block; }
+.verify-chart-label { fill: var(--ink); font-size: 13px; font-weight: 760; }
+.verify-chart-axis { stroke: #aeb8be; stroke-width: 1; }
+.verify-chart-tick { fill: #647078; font-size: 10px; text-anchor: end; dominant-baseline: middle; }
+.verify-chart-x text { fill: #647078; font-size: 10px; text-anchor: middle; }
+.verify-chart-x text.end { text-anchor: end; }
+.verify-median { stroke-width: 1.2; stroke-dasharray: 5 5; opacity: .7; }
+.verify-median.previous { stroke: #9aa4ab; }
+.verify-dot.previous { fill: #c4cbd0; stroke: #fff; stroke-width: 1.5; }
+.verify-chart.knee .verify-median.current { stroke: var(--blue); }
+.verify-chart.knee .verify-dot.current { fill: var(--blue); stroke: #fff; stroke-width: 1.5; }
+.verify-chart.depth .verify-median.current { stroke: var(--teal); }
+.verify-chart.depth .verify-dot.current { fill: var(--teal); stroke: #fff; stroke-width: 1.5; }
+.verify-chart figcaption { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: #55626a; font-size: 12px; }
+.verify-key-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-right: 8px; }
+.verify-key { width: 10px; height: 10px; display: inline-block; flex: 0 0 auto; border-radius: 50%; }
+.verify-key.previous { background: #c4cbd0; }
+.verify-chart.narrow .verify-chart-label { font-size: 15px; }
+.verify-chart.narrow .verify-chart-tick,
+.verify-chart.narrow .verify-chart-x text { font-size: 12.5px; }
+.verify-chart.knee .verify-key.current { background: var(--blue); }
+.verify-chart.depth .verify-key.current { background: var(--teal); }
