@@ -1151,7 +1151,9 @@ function requestedAdjMerge() {
 async function runEngine(calibration) {
   const pyodide = await initPyodide();
   const payload = {
-    frames: state.frames,
+    // 사람이 안 잡힌 프레임은 null 이다. Pyodide 0.28 은 null 을 JsNull 로 넘겨 엔진의 None 검사를 통과하지 못하므로
+    // undefined(→ Python None)로 바꿔 넘긴다. 걸어 들어오는 영상처럼 사람이 없는 구간이 있으면 이 경우가 생긴다.
+    frames: (state.frames || []).map((frame) => (frame == null ? undefined : frame)),
     width: state.frameWidth,
     height: state.frameHeight,
     fps: state.analysisFps,
@@ -1671,15 +1673,24 @@ function renderTimeSeriesCharts() {
   const fps = finite(series.fps) && series.fps > 0 ? series.fps : state.analysisFps;
   const frameCount = Math.max(1, hips.length - 1);
   const seconds = frameCount / fps;
-  const width = 960;
-  const left = 70;
-  const right = 20;
+  // 휴대폰 폭에서는 좁은 도면으로 그려 글씨가 읽히게 한다(제목·설명 두 줄, 큰 글씨).
+  const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches && bottoms.length <= 12;
+  const width = narrow ? 480 : 960;
+  const left = narrow ? 52 : 70;
+  const right = narrow ? 12 : 20;
   const plotWidth = width - left - right;
-  const topY = 42;
-  const topHeight = 184;
-  const lowerY = 292;
-  const lowerHeight = 112;
+  const titleY = narrow ? 24 : 21;
+  const detailY = narrow ? 46 : 21;
+  const topY = narrow ? 62 : 42;
+  const topHeight = narrow ? 170 : 184;
+  const lowerTitleY = narrow ? topY + topHeight + 40 : 270;
+  const lowerDetailY = narrow ? lowerTitleY + 22 : 270;
+  const lowerY = narrow ? lowerDetailY + 16 : 292;
+  const lowerHeight = narrow ? 110 : 112;
   const fullBottom = lowerY + lowerHeight;
+  const svgHeight = fullBottom + (narrow ? 64 : 56);
+  const pointR = narrow ? 8 : 7;
+  const tickW = narrow ? 34 : 26;
   const hipMax = Math.max(110, Math.ceil(Math.max(...hips.filter(finite), 100) / 10) * 10);
   const usableKnees = knees.filter((value, index) => repUsable(index) && finite(value));
   const kneeMedian = median(usableKnees);
@@ -1710,19 +1721,19 @@ function renderTimeSeriesCharts() {
     if (!finite(value)) return '';
     const flagged = depthFlagged.has(index + 1);
     const active = index === state.selectedRep;
-    return `<g class="series-point series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="D1_hip_ankle_rel" tabindex="0" role="button" aria-label="${index + 1}회차 골반 높이 ${Math.round(value)}%, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${hipY(value).toFixed(2)}" r="7"/></g>`;
+    return `<g class="series-point series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="D1_hip_ankle_rel" tabindex="0" role="button" aria-label="${index + 1}회차 골반 높이 ${Math.round(value)}%, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${hipY(value).toFixed(2)}" r="${pointR}"/></g>`;
   }).join('');
   const kneePoints = bottoms.map((bottom, index) => {
     const value = knees[index];
     if (!finite(value) || !repUsable(index)) return '';
     const flagged = kneeFlagged.has(index + 1);
     const active = index === state.selectedRep;
-    return `<g class="series-point knee series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="A2_knee_w_rel_stand" tabindex="0" role="button" aria-label="${index + 1}회차 무릎 간격 ${multiple(value)}, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${kneeY(value).toFixed(2)}" r="7"/></g>`;
+    return `<g class="series-point knee series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="A2_knee_w_rel_stand" tabindex="0" role="button" aria-label="${index + 1}회차 무릎 간격 ${multiple(value)}, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${kneeY(value).toFixed(2)}" r="${pointR}"/></g>`;
   }).join('');
   const timeTicks = Array.from({ length: 5 }, (_, index) => {
     const ratio = index / 4;
     const x = left + ratio * plotWidth;
-    return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + 44}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
+    return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + (narrow ? 54 : 44)}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
   }).join('');
   const repGuides = bottoms.map((bottom) => `<line x1="${xAt(bottom).toFixed(2)}" y1="${topY}" x2="${xAt(bottom).toFixed(2)}" y2="${topY + topHeight}"/><line x1="${xAt(bottom).toFixed(2)}" y1="${lowerY}" x2="${xAt(bottom).toFixed(2)}" y2="${fullBottom}"/>`).join('');
   const repTicks = bottoms.map((bottom, index) => {
@@ -1730,32 +1741,32 @@ function renderTimeSeriesCharts() {
     const flagged = anyFlagged.has(index + 1);
     const active = index === state.selectedRep;
     const metric = kneeFlagged.has(index + 1) ? 'A2_knee_w_rel_stand' : depthFlagged.has(index + 1) ? 'D1_hip_ankle_rel' : (state.comparisonMetric || 'A2_knee_w_rel_stand');
-    return `<g class="series-rep-tick series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="${metric}" role="button" tabindex="-1" aria-label="${index + 1}회차 근거 장면 보기"><rect x="${(xAt(bottom) - 13).toFixed(2)}" y="${fullBottom + 4}" width="26" height="22" rx="4"/><text x="${x}" y="${fullBottom + 20}">${index + 1}</text></g>`;
+    return `<g class="series-rep-tick series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="${metric}" role="button" tabindex="-1" aria-label="${index + 1}회차 근거 장면 보기"><rect x="${(xAt(bottom) - tickW / 2).toFixed(2)}" y="${fullBottom + 4}" width="${tickW}" height="${narrow ? 28 : 22}" rx="4"/><text x="${x}" y="${fullBottom + (narrow ? 25 : 20)}">${index + 1}</text></g>`;
   }).join('');
   const hipPath = svgPath(hips, xAt, hipY);
   return `
     <div class="series-chart-wrap">
-      <svg class="series-chart" viewBox="0 0 ${width} 460" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
+      <svg class="series-chart${narrow ? ' narrow' : ''}" viewBox="0 0 ${width} ${svgHeight}" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
         <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${topHeight}"/>
         <rect class="series-standing-band" x="${standingX}" y="${lowerY}" width="${standingWidth}" height="${lowerHeight}"/>
         ${ranges}
         <g class="series-rep-guides" aria-hidden="true">${repGuides}</g>
-        <text class="series-title" x="${left}" y="21">골반 높이 흐름</text>
-        <text class="series-detail" x="${left + 132}" y="21">준비자세 = 100% · 내려갈수록 값이 작아짐</text>
+        <text class="series-title" x="${narrow ? 0 : left}" y="${titleY}">골반 높이 흐름</text>
+        <text class="series-detail" x="${narrow ? 0 : left + 132}" y="${detailY}">준비자세 = 100% · 내려갈수록 값이 작아짐</text>
         <line class="series-axis" x1="${left}" y1="${topY}" x2="${left}" y2="${topY + topHeight}"/>
         <line class="series-axis" x1="${left}" y1="${topY + topHeight}" x2="${width - right}" y2="${topY + topHeight}"/>
         <line class="series-standing-line" x1="${left}" y1="${hipY(100)}" x2="${width - right}" y2="${hipY(100)}"/>
         <text class="series-axis-label" x="${left - 10}" y="${hipY(100) + 4}" text-anchor="end">100%</text>
         <path class="series-hip-line" d="${hipPath}"/>
         ${hipPoints}
-        <text class="series-title" x="${left}" y="270">반복마다의 무릎 간격</text>
-        <text class="series-detail" x="${left + 190}" y="270">준비자세 = 1배 · 점선은 세트 중앙값</text>
+        <text class="series-title" x="${narrow ? 0 : left}" y="${lowerTitleY}">반복마다의 무릎 간격</text>
+        <text class="series-detail" x="${narrow ? 0 : left + 190}" y="${lowerDetailY}">준비자세 = 1배 · 점선은 세트 중앙값</text>
         <line class="series-axis" x1="${left}" y1="${lowerY}" x2="${left}" y2="${fullBottom}"/>
         <line class="series-axis" x1="${left}" y1="${fullBottom}" x2="${width - right}" y2="${fullBottom}"/>
         ${finite(kneeMedian) ? `<line class="series-median-line" x1="${left}" y1="${kneeY(kneeMedian)}" x2="${width - right}" y2="${kneeY(kneeMedian)}"/><text class="series-axis-label" x="${left - 10}" y="${kneeY(kneeMedian) + 4}" text-anchor="end">${multiple(kneeMedian)}</text>` : ''}
         ${kneePoints}
         <g class="series-time-axis">${timeTicks}</g>
-        <g class="series-rep-axis"><text class="series-rep-axis-label" x="${left - 10}" y="${fullBottom + 20}">회차</text>${repTicks}</g>
+        <g class="series-rep-axis"><text class="series-rep-axis-label" x="${left - 10}" y="${fullBottom + (narrow ? 25 : 20)}">회차</text>${repTicks}</g>
       </svg>
     </div>`;
 }
@@ -2293,7 +2304,9 @@ function renderLowerExercise() {
 }
 
 function renderNotices() {
-  const warnings = state.result.warnings || [];
+  // 결과를 낼 수 없을 때 '분석 보류' 사유는 아래 카드에 이미 나오므로 위쪽 알림에서는 뺀다.
+  const unusable = state.result.result_usable === false;
+  const warnings = (state.result.warnings || []).filter((warning) => !(unusable && warning.severity === 'error'));
   const labels = { info: '안내', warn: '확인', error: '분석 보류' };
   $('#result-notices').innerHTML = warnings.map((warning) => `
     <div class="result-notice ${escapeHtml(warning.severity)}">

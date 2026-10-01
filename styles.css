@@ -302,6 +302,11 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .series-rep-tick { cursor: pointer; }
 .series-rep-tick rect { fill: transparent; }
 .series-rep-tick text { fill: #3f4a52; font-size: 13px; font-weight: 760; text-anchor: middle; }
+.series-chart.narrow { min-height: 0; }
+.series-chart.narrow .series-title { font-size: 22px; }
+.series-chart.narrow .series-detail, .series-chart.narrow .series-axis-label, .series-chart.narrow .series-rep-axis-label { font-size: 15px; }
+.series-chart.narrow .series-time-axis text { font-size: 14px; }
+.series-chart.narrow .series-rep-tick text { font-size: 19px; }
 .series-rep-tick.flagged rect { fill: #fdeee6; }
 .series-rep-tick.flagged text { fill: #b24a2c; }
 .series-rep-tick.active rect { fill: none; stroke: #8a959c; stroke-width: 1.2; }
