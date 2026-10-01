@@ -1394,7 +1394,7 @@ function renderSummary() {
     : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
   $('#result-summary').innerHTML = `
     <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수${usableCount < state.result.n_reps ? ` · 값에 사용 ${usableCount}회` : ''}</small></div>
-    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? percent(pelvisHeightMedian) : '확인 어려움'}</strong><small>보통 골반 높이 · 준비자세 = 100%</small></div>
+    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? percent(pelvisHeightMedian) : '확인 어려움'}</strong><small>보통 깊이 · 골반 높이 (준비자세 = 100%)</small></div>
     <div class="summary-chip"><strong>${finite(kneeMedian) ? multiple(kneeMedian) : '확인 어려움'}</strong><small>보통 무릎 간격 · 준비자세 = 1배</small></div>
     <div class="summary-chip"><strong>${finite(averageRhythm) ? `약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>회당 반복 시간</small></div>
   `;
@@ -1444,7 +1444,7 @@ function feedbackTagsForRep(index) {
   const tags = [];
   for (const item of feedbackForRep(index)) {
     if (item.rule_id?.startsWith('KNEE') && !tags.includes('무릎 간격 좁음')) tags.push('무릎 간격 좁음');
-    if (item.rule_id?.startsWith('DEPTH') && !tags.includes('얕음')) tags.push('얕음');
+    if (item.rule_id?.startsWith('DEPTH') && !tags.includes('덜 깊음')) tags.push('덜 깊음');
     if (item.rule_id?.endsWith('_LATE') && !tags.includes('후반부')) tags.push('후반부');
   }
   return tags;
@@ -1460,8 +1460,8 @@ function feedbackSentence(item) {
   const repText = reps.map((rep) => `${rep}회차`).join('·');
   if (item.rule_id === 'KNEE_LATE') return `후반 반복(${repText})에서 무릎 간격이 초반보다 좁아지는 경향이 보였습니다.`;
   if (item.rule_id === 'KNEE_REP') return `${repText}에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다.`;
-  if (item.rule_id === 'DEPTH_LATE') return `후반 반복(${repText})에서 골반 높이가 초반보다 높아지는 경향이 보였습니다.`;
-  if (item.rule_id === 'DEPTH_REP') return `${repText}에서 골반 높이가 다른 반복보다 높았습니다.`;
+  if (item.rule_id === 'DEPTH_LATE') return `후반 반복(${repText})에서 초반보다 덜 깊게 내려가는 경향이 보였습니다.`;
+  if (item.rule_id === 'DEPTH_REP') return `${repText}에서 다른 반복보다 덜 깊게 내려갔습니다.`;
   return item.text || '';
 }
 
@@ -1511,7 +1511,7 @@ function renderBarChart({
     const flagged = feedback.some((item) => (item.reps || []).map(Number).includes(repNumber));
     const early = !flagged && earlyReps.has(repNumber);
     const missingTag = typeof missingLabel === 'function' ? missingLabel(index) : missingLabel;
-    const tag = excluded ? (unavailable ? missingTag : '제외') : flagged ? (family === 'knee' ? '좁음' : '얕음') : early ? '초반' : '';
+    const tag = excluded ? (unavailable ? missingTag : '제외') : flagged ? (family === 'knee' ? '좁음' : '덜 깊음') : early ? '초반' : '';
     const height = excluded ? 0 : Math.max(2, Math.min(barAreaHeight, (Math.max(0, value) / scaleMaximum) * barAreaHeight));
     const stateClass = excluded ? 'excluded' : flagged ? 'flagged' : early ? 'early' : '';
     const valueText = excluded ? '—' : valueFormatter(value);
@@ -1695,13 +1695,13 @@ function renderTimeSeriesCharts() {
   const hipPath = svgPath(hips, xAt, hipY);
   return `
     <div class="series-chart-wrap">
-      <svg class="series-chart${narrow ? ' narrow' : ''}" viewBox="0 0 ${width} ${svgHeight}" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
+      <svg class="series-chart${narrow ? ' narrow' : ''}" viewBox="0 0 ${width} ${svgHeight}" role="img" aria-label="깊이(골반 높이)의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
         <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${topHeight}"/>
         <rect class="series-standing-band" x="${standingX}" y="${lowerY}" width="${standingWidth}" height="${lowerHeight}"/>
         ${ranges}
         <g class="series-rep-guides" aria-hidden="true">${repGuides}</g>
-        <text class="series-title" x="${narrow ? 0 : left}" y="${titleY}">골반 높이 흐름</text>
-        <text class="series-detail" x="${narrow ? 0 : left + 132}" y="${detailY}">준비자세 = 100% · 내려갈수록 값이 작아짐</text>
+        <text class="series-title" x="${narrow ? 0 : left}" y="${titleY}">깊이 흐름</text>
+        <text class="series-detail" x="${narrow ? 0 : left + 98}" y="${detailY}">아래로 갈수록 더 깊게 앉은 장면 · 준비자세 골반 높이 = 100%</text>
         <line class="series-axis" x1="${left}" y1="${topY}" x2="${left}" y2="${topY + topHeight}"/>
         <line class="series-axis" x1="${left}" y1="${topY + topHeight}" x2="${width - right}" y2="${topY + topHeight}"/>
         <line class="series-standing-line" x1="${left}" y1="${hipY(100)}" x2="${width - right}" y2="${hipY(100)}"/>
@@ -1837,7 +1837,7 @@ function renderRepOverview() {
         <span class="rep-overview-body">
           <span class="rep-overview-head"><strong>${index + 1}회차</strong>${excluded ? '<em>값 제외</em>' : ''}</span>
           <span class="rep-overview-metric"><span><small>무릎 간격</small><b>${excluded ? '—' : multiple(rep.A2_knee_w_rel_stand)}</b></span>${medianBar(rep.A2_knee_w_rel_stand, kneeValues, excluded, '무릎 간격', multiple)}</span>
-          <span class="rep-overview-metric"><span><small>골반 높이</small><b>${excluded ? '—' : percent(pelvisHeightValue)}</b></span>${medianBar(pelvisHeightValue, pelvisHeightValues, excluded, '골반 높이', (value) => `골반 높이 ${percent(value)}`)}</span>
+          <span class="rep-overview-metric"><span><small>깊이 · 골반 높이</small><b>${excluded ? '—' : percent(pelvisHeightValue)}</b></span>${medianBar(pelvisHeightValue, pelvisHeightValues, excluded, '골반 높이', (value) => `골반 높이 ${percent(value)}`)}</span>
           <span class="rep-overview-note">${notes.map(escapeHtml).join(' · ')}</span>
         </span>
       </button>`;
@@ -1864,9 +1864,9 @@ function renderObservation(index) {
       note: '준비자세의 무릎 간격을 1배로 본 값입니다.',
     },
     {
-      label: '가장 낮은 순간의 골반 높이',
+      label: '깊이 · 가장 낮은 순간의 골반 높이',
       value: `골반 높이 ${percent(rep.D1_hip_ankle_rel)}`,
-      note: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 값이 작을수록 더 내려간 회차입니다.',
+      note: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 값이 작을수록 더 깊게 내려간 회차입니다.',
     },
   ];
   if (finite(rep.C1_trunk_span_rel)) {
@@ -2462,7 +2462,8 @@ function verifyCompareChart(row) {
   const medianLine = (value, cls) => `<line class="${cls}" x1="${left}" x2="${width - right}" y1="${yAt(value).toFixed(1)}" y2="${yAt(value).toFixed(1)}"/>`;
   const ticks = Array.from({ length: count }, (_, index) => `<text x="${xAt(index).toFixed(1)}" y="${top + height + 20}">${index + 1}</text>`).join('');
   const fmt = (value) => (isDepth ? `${value.toFixed(0)}%` : value.toFixed(2));
-  const label = isDepth ? '회차별 골반 높이 (준비자세 = 100%)' : '회차별 무릎 간격 (발목 간격 = 1배)';
+  const label = isDepth ? '회차별 깊이 (아래일수록 더 깊게)' : '회차별 무릎 간격 (발목 간격 = 1배)';
+  const keyName = isDepth ? '골반 높이 중앙값' : '중앙값';
   return `
     <figure class="verify-chart ${isDepth ? 'depth' : 'knee'}${narrow ? ' narrow' : ''}">
       <svg viewBox="0 0 ${width} ${top + height + 34}" role="img" aria-label="${escapeHtml(label)}: 직전 세트 중앙값 ${escapeHtml(fmt(prevMedian))}, 이번 세트 중앙값 ${escapeHtml(fmt(currMedian))}">
@@ -2478,7 +2479,7 @@ function verifyCompareChart(row) {
         ${dots(current, 'verify-dot current')}
         <g class="verify-chart-x">${ticks}<text x="${left - 10}" y="${top + height + 20}" class="end">회차</text></g>
       </svg>
-      <figcaption><span class="verify-key-item"><span class="verify-key previous"></span>직전 세트 · 중앙값 ${escapeHtml(fmt(prevMedian))}</span> <span class="verify-key-item"><span class="verify-key current"></span>이번 세트 · 중앙값 ${escapeHtml(fmt(currMedian))}</span></figcaption>
+      <figcaption><span class="verify-key-item"><span class="verify-key previous"></span>직전 세트 · ${keyName} ${escapeHtml(fmt(prevMedian))}</span> <span class="verify-key-item"><span class="verify-key current"></span>이번 세트 · ${keyName} ${escapeHtml(fmt(currMedian))}</span></figcaption>
     </figure>`;
 }
 
@@ -2501,7 +2502,7 @@ async function renderVerify() {
     const cautions = row.cautions || [];
     return `
       <article class="verify-result">
-        <div class="verify-result-head"><h3>${escapeHtml(row.metric === 'D1_hip_ankle_rel' ? '골반 높이' : row.metric === 'A1_knee_ankle_w' ? '무릎 간격' : row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
+        <div class="verify-result-head"><h3>${escapeHtml(row.metric === 'D1_hip_ankle_rel' ? '깊이' : row.metric === 'A1_knee_ankle_w' ? '무릎 간격' : row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
         <p class="verify-summary">${escapeHtml(neutralView.summary)}</p>
         ${verifyCompareChart(row)}
         ${hasEvidence ? `<div class="verify-media">
@@ -2549,7 +2550,7 @@ function neutralComparisonCopy(row) {
     const deeper = row.delta < 0;
     return {
       display: deeper ? '더 내려감' : '덜 내려감',
-      summary: `직전 세트보다 ${deeper ? '더' : '덜'} 내려갔습니다.`,
+      summary: `직전 세트보다 ${deeper ? '더' : '덜'} 깊게 내려갔습니다.`,
       values,
     };
   }
