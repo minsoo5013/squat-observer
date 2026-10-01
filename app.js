@@ -1264,11 +1264,29 @@ function extremeRep(key, mode = 'min') {
   return { index: bestIndex, value: bestValue };
 }
 
+// 문구에 표시하는 자릿수에서 같은 값으로 보이는 회차를 함께 적는다.
+// 실제 최솟값/최댓값 회차 선택은 extremeRep() 그대로 유지한다.
+function displayedExtremeReps(key, mode, formatter) {
+  const extreme = extremeRep(key, mode);
+  if (extreme.index < 0 || !finite(extreme.value)) return { ...extreme, reps: [] };
+  const shownValue = formatter(extreme.value);
+  const reps = [];
+  state.result.per_rep.forEach((rep, index) => {
+    if (!repUsable(index) || !finite(rep[key])) return;
+    if (formatter(rep[key]) === shownValue) reps.push(index);
+  });
+  return { ...extreme, reps };
+}
+
+function repNumbersText(indices) {
+  return `${indices.map((index) => index + 1).join('·')}회차`;
+}
+
 function renderSummary() {
-  const kneeNarrow = extremeRep('A2_knee_w_rel_stand', 'min');
-  const kneeWide = extremeRep('A2_knee_w_rel_stand', 'max');
-  const deep = extremeRep('D1_hip_ankle_rel', 'min');
-  const shallow = extremeRep('D1_hip_ankle_rel', 'max');
+  const kneeNarrow = displayedExtremeReps('A2_knee_w_rel_stand', 'min', multiple);
+  const kneeWide = displayedExtremeReps('A2_knee_w_rel_stand', 'max', multiple);
+  const deep = displayedExtremeReps('D1_hip_ankle_rel', 'min', percent);
+  const shallow = displayedExtremeReps('D1_hip_ankle_rel', 'max', percent);
   const usableCount = state.result.per_rep.filter((_, index) => repUsable(index)).length;
   const kneeValues = metricValues('A2_knee_w_rel_stand');
   const pelvisHeightValues = metricValues('D1_hip_ankle_rel');
@@ -1283,12 +1301,12 @@ function renderSummary() {
     : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
   $('#result-summary').innerHTML = `
     <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수 · 값에 사용 ${usableCount}회</small></div>
-    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? `골반 높이 ${percent(pelvisHeightMedian)}` : '확인 어려움'}</strong><small>가장 낮은 순간 · 준비자세 = 100%</small></div>
-    <div class="summary-chip"><strong>${finite(kneeMedian) && kneeNarrow.index >= 0 ? `보통 ${multiple(kneeMedian)} · 가장 좁았던 ${kneeNarrow.index + 1}회차 ${multiple(kneeNarrow.value)}` : '확인 어려움'}</strong><small>무릎 간격 · 준비자세 대비</small></div>
+    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? `보통 골반 높이 ${percent(pelvisHeightMedian)}` : '확인 어려움'}</strong><small>준비자세 높이를 100%로 비교</small></div>
+    <div class="summary-chip"><strong>${finite(kneeMedian) && kneeNarrow.index >= 0 ? `보통 ${multiple(kneeMedian)} · 가장 좁았던 ${repNumbersText(kneeNarrow.reps)} ${multiple(kneeNarrow.value)}` : '확인 어려움'}</strong><small>무릎 간격 · 준비자세 대비</small></div>
     <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬 · 참고</small></div>
   `;
   const extremeSentence = deep.index >= 0 && shallow.index >= 0 && kneeWide.index >= 0 && kneeNarrow.index >= 0
-    ? `가장 깊었던 회차는 ${deep.index + 1}회차, 가장 얕았던 회차는 ${shallow.index + 1}회차입니다. 무릎 간격은 ${kneeWide.index + 1}회차가 가장 넓고 ${kneeNarrow.index + 1}회차가 가장 좁았습니다.`
+    ? `가장 많이 내려간 회차는 ${repNumbersText(deep.reps)}, 가장 덜 내려간 회차는 ${repNumbersText(shallow.reps)}입니다. 무릎 간격은 ${repNumbersText(kneeWide.reps)}가 가장 넓고 ${repNumbersText(kneeNarrow.reps)}가 가장 좁았습니다.`
     : '확인할 수 있는 회차의 흐름만 표시합니다.';
   $('#result-flow').innerHTML = `<p>${escapeHtml(extremeSentence)}</p>`;
   setHidden($('#low-rep-note'), !(state.result.n_reps >= 4 && state.result.n_reps <= 5));
@@ -1402,8 +1420,10 @@ function renderBarChart({
     const valueText = excluded ? '—' : valueFormatter(value);
     const content = `
         <span class="rep-bar-tag">${escapeHtml(tag)}</span>
-        <strong>${escapeHtml(valueText)}</strong>
-        <span class="rep-bar-space">${excluded ? '' : `<span class="rep-bar-fill" style="height:${height}px"></span>`}</span>
+        <span class="rep-bar-space">
+          <strong class="rep-bar-value" style="bottom:${excluded ? 3 : height + 3}px">${escapeHtml(valueText)}</strong>
+          ${excluded ? '' : `<span class="rep-bar-fill" style="height:${height}px"></span>`}
+        </span>
         <small>${repNumber}회</small>`;
     if (reference) {
       return `<div class="rep-bar-button ${stateClass}" aria-label="${repNumber}회차 ${escapeHtml(title)} ${escapeHtml(valueText)}${tag ? `, ${escapeHtml(tag)}` : ''}">${content}</div>`;
@@ -1494,9 +1514,9 @@ function renderRepCharts() {
   const count = state.result.per_rep.length;
   const kneeFeedback = orderedFeedback().find((item) => feedbackMatchesChart(item, 'knee'));
   const kneeMedian = median(kneeValues.filter((value, index) => repUsable(index) && finite(value)));
-  const kneeNarrowest = transformedExtreme(kneeValues, 'min');
-  const deepest = transformedExtreme(pelvisHeightValues, 'min');
-  const shallowest = transformedExtreme(pelvisHeightValues, 'max');
+  const kneeNarrowest = displayedExtremeReps('A2_knee_w_rel_stand', 'min', multiple);
+  const deepest = displayedExtremeReps('D1_hip_ankle_rel', 'min', percent);
+  const shallowest = displayedExtremeReps('D1_hip_ankle_rel', 'max', percent);
   const scroll = $('#rep-chart-scroll');
   scroll.classList.toggle('scrollable', count > 12);
   $('#rep-chart-inner').style.minWidth = count > 12 ? `${count * 30}px` : '';
@@ -1508,7 +1528,7 @@ function renderRepCharts() {
       metric: 'A2_knee_w_rel_stand',
       values: kneeValues,
       summary: kneeFeedback ? feedbackSentence(kneeFeedback) : finite(kneeMedian)
-        ? `보통 ${multiple(kneeMedian)}${kneeNarrowest.index >= 0 ? ` · 가장 좁았던 ${kneeNarrowest.index + 1}회차 ${multiple(kneeNarrowest.value)}` : ''}`
+        ? `보통 ${multiple(kneeMedian)}${kneeNarrowest.index >= 0 ? ` · 가장 좁았던 ${repNumbersText(kneeNarrowest.reps)} ${multiple(kneeNarrowest.value)}` : ''}`
         : '무릎 간격을 비교할 수 있는 회차가 없습니다.',
       help: '1배는 준비자세의 무릎 간격입니다. 막대가 낮을수록 준비자세보다 무릎 간격이 좁게 보인 회차입니다.',
       valueFormatter: multiple,
@@ -1520,7 +1540,7 @@ function renderRepCharts() {
       detail: '준비자세 = 100% · 낮을수록 더 내려감',
       metric: 'D1_hip_ankle_rel',
       values: pelvisHeightValues,
-      summary: deepest.index >= 0 && shallowest.index >= 0 ? `가장 깊게 앉은 회차는 ${deepest.index + 1}회차, 가장 얕은 회차는 ${shallowest.index + 1}회차입니다.` : '',
+      summary: deepest.index >= 0 && shallowest.index >= 0 ? `가장 많이 내려간 회차는 ${repNumbersText(deepest.reps)}, 가장 덜 내려간 회차는 ${repNumbersText(shallowest.reps)}입니다.` : '',
       help: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 막대가 짧을수록 골반이 더 내려간 회차이며 실제 cm나 3D 깊이가 아닙니다.',
       valueFormatter: percent,
       medianFormatter: (value) => `골반 높이 ${percent(value)}`,
@@ -1602,8 +1622,10 @@ function renderRepOverview() {
   const pelvisHeightByRep = state.result.per_rep.map((rep) => (
     finite(rep.D1_hip_ankle_rel) ? rep.D1_hip_ankle_rel : null
   ));
-  const deepest = transformedExtreme(pelvisHeightByRep, 'min');
-  const shallowest = transformedExtreme(pelvisHeightByRep, 'max');
+  const deepest = displayedExtremeReps('D1_hip_ankle_rel', 'min', percent);
+  const shallowest = displayedExtremeReps('D1_hip_ankle_rel', 'max', percent);
+  const deepestReps = new Set(deepest.reps);
+  const shallowestReps = new Set(shallowest.reps);
   $('#rep-grid').innerHTML = state.result.per_rep.map((rep, index) => {
     const excluded = !repUsable(index);
     const tags = feedbackTagsForRep(index);
@@ -1612,8 +1634,8 @@ function renderRepOverview() {
     if (excluded) notes.push('값 비교에서 제외');
     else if (related) notes.push(feedbackSentence(related));
     else notes.push('다른 반복과 큰 차이 없음');
-    if (!excluded && index === deepest.index) notes.push('세트에서 가장 깊음');
-    if (!excluded && index === shallowest.index) notes.push('세트에서 가장 얕음');
+    if (!excluded && deepestReps.has(index)) notes.push('세트에서 가장 많이 내려감');
+    if (!excluded && shallowestReps.has(index)) notes.push('세트에서 가장 덜 내려감');
     const pelvisHeightValue = pelvisHeightByRep[index];
     return `
       <button class="rep-overview-card ${tags.length ? 'flagged' : ''} ${excluded ? 'excluded' : ''} ${index === state.selectedRep ? 'active' : ''}" data-rep="${index}" role="listitem" aria-current="${index === state.selectedRep}">
@@ -1974,7 +1996,7 @@ function renderFeedback() {
     KNEE_LATE: '후반부의 무릎 간격 변화',
     KNEE_REP: '다른 반복보다 무릎이 모였던 회차',
     DEPTH_LATE: '후반부의 깊이 변화',
-    DEPTH_REP: '가장 얕았던 회차',
+    DEPTH_REP: '다른 반복보다 덜 내려간 회차',
   };
   $('#feedback-list').innerHTML = feedback.map((item, index) => `
     <button class="feedback-item ${item.primary ? 'primary' : ''}" data-feedback="${index}">
@@ -2073,7 +2095,16 @@ function renderRetry() {
   const warmup = state.recommendations?.rules?.before_next_set;
   const item = warmup?.items?.[0];
   const container = $('#retry-warmup');
-  if (!item) {
+  const displayedMediaUrls = new Set(
+    [...document.querySelectorAll('#recommend-grid video, #lower-exercise-card video')]
+      .map((media) => {
+        try { return new URL(media.currentSrc || media.src, document.baseURI).href; } catch { return ''; }
+      })
+      .filter(Boolean),
+  );
+  let warmupUrl = '';
+  try { warmupUrl = item ? new URL(item.video_url, document.baseURI).href : ''; } catch { warmupUrl = ''; }
+  if (!item || (warmupUrl && displayedMediaUrls.has(warmupUrl))) {
     container.replaceChildren();
     setHidden(container, true);
     return;
