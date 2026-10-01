@@ -267,6 +267,29 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .rep-chart-scroll { max-width: 100%; overflow-x: hidden; }
 .rep-chart-scroll.scrollable { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-gutter: stable; }
 .rep-chart-inner { min-width: 0; }
+.series-chart-wrap { width: 100%; overflow: hidden; }
+.series-chart { width: 100%; height: auto; min-height: 310px; display: block; touch-action: manipulation; }
+.series-axis { stroke: #aeb8be; stroke-width: 1; }
+.series-standing-band { fill: #e9ecee; opacity: .78; }
+.series-alert-range { fill: #f5b88f; opacity: .16; cursor: pointer; }
+.series-alert-range:hover, .series-alert-range:focus-visible { opacity: .26; outline: none; }
+.series-standing-line { stroke: #78858c; stroke-width: 1.25; stroke-dasharray: 6 5; }
+.series-median-line { stroke: #7a858b; stroke-width: 1; stroke-dasharray: 5 5; opacity: .62; }
+.series-hip-line { fill: none; stroke: var(--teal); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.series-title { fill: var(--ink); font-size: 16px; font-weight: 780; }
+.series-detail, .series-axis-label, .series-reference-label { fill: #647078; font-size: 11px; font-weight: 620; }
+.series-time-axis line { stroke: #aeb8be; stroke-width: 1; }
+.series-time-axis text { fill: #647078; font-size: 10px; text-anchor: middle; }
+.series-point { color: var(--teal); cursor: pointer; }
+.series-point.knee { color: var(--blue); }
+.series-point circle { fill: #fff; stroke: currentColor; stroke-width: 3; transition: r .15s ease, stroke-width .15s ease; }
+.series-point text { fill: #55626a; font-size: 11px; font-weight: 760; text-anchor: middle; }
+.series-point.flagged { color: var(--orange); }
+.series-point.flagged circle { fill: #fff8f3; stroke-width: 4; }
+.series-point.flagged text { fill: #994224; }
+.series-point.active circle, .series-point:hover circle, .series-point:focus-visible circle { r: 10px; stroke-width: 4; }
+.series-point:focus-visible { outline: none; }
+.series-unavailable { padding: 28px; color: #6a4d3d; background: #fff8f3; border: 1px solid #e9c6b1; font-size: 13px; }
 .rep-bar-chart + .rep-bar-chart { margin-top: 25px; padding-top: 21px; border-top: 1px solid var(--line); }
 .rep-bar-chart-title { margin-bottom: 6px; display: flex; align-items: baseline; gap: 9px; }
 .rep-bar-chart-title h4 { margin: 0; color: var(--ink); font-size: 15px; }
@@ -587,6 +610,19 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .preview-summary strong, .preview-summary span { display: block; }
 .preview-summary strong { color: var(--ink); font-size: 15px; line-height: 1.2; }
 .preview-summary span { margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.preview-series-card { margin-top: 12px; padding: 10px 10px 5px; overflow: hidden; border: 1px solid var(--line); }
+.preview-series-card svg { width: 100%; height: auto; display: block; }
+.preview-series-alert { fill: #f5b88f; opacity: .18; }
+.preview-series-axis { stroke: #b3bdc3; stroke-width: 1; }
+.preview-series-reference { stroke: #7b878e; stroke-width: 1; stroke-dasharray: 5 4; opacity: .7; }
+.preview-series-hip { fill: none; stroke: var(--teal); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.preview-series-title { fill: var(--ink); font-size: 13px; font-weight: 800; }
+.preview-series-detail, .preview-series-note, .preview-series-time { fill: #69767e; font-size: 9px; font-weight: 650; }
+.preview-series-points { fill: #fff; stroke: var(--teal); stroke-width: 2.5; }
+.preview-series-points.knee { stroke: var(--blue); }
+.preview-series-points .flagged { fill: #fff7f1; stroke: var(--orange); stroke-width: 3.5; }
+.preview-series-reps text { y: 251px; fill: #68747b; font-size: 9px; font-weight: 700; text-anchor: middle; }
+.preview-series-reps text.flagged { fill: #9b4b20; font-weight: 850; }
 .preview-bar-card { margin-top: 12px; padding: 12px 12px 9px; border: 1px solid var(--line); }
 .preview-bar-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .preview-bar-head strong { color: var(--ink); font-size: 11px; }

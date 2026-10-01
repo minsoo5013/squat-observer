@@ -1146,7 +1146,7 @@ async function runEngine(calibration) {
 import dataclasses, json, math, sys
 import numpy as np
 sys.path.insert(0, '/home/pyodide')
-from frontal import engine, feedback_rules
+from frontal import adapter, engine, feedback_rules, landmarks, qc, signals
 
 def clean(value):
     if dataclasses.is_dataclass(value):
@@ -1205,6 +1205,42 @@ selected = {
 }
 selected['feedback'] = feedback_rules.evaluate(selected)
 selected['retry_targets'] = feedback_rules.retry_targets(selected['feedback'])
+
+# 화면용 시계열은 엔진 결과를 바꾸지 않는 읽기 전용 경로다. 엔진과 동일하게
+# 원본 MediaPipe 좌표의 튄 프레임을 비운 뒤 같은 보간 함수와 standing 분모를 쓴다.
+chart_seq = adapter.from_mediapipe(
+    WEB_INPUT['frames'], int(WEB_INPUT['width']), int(WEB_INPUT['height']),
+    fps=float(WEB_INPUT['fps']), mirrored=None,
+)
+chart_jumps, _ = qc.jump_mask(chart_seq.P, float(WEB_INPUT['fps']))
+chart_P = chart_seq.P.copy()
+if chart_jumps.any():
+    chart_P[chart_jumps] = np.nan
+chart_P, _ = landmarks.fill_gaps(chart_P)
+chart_ratio = signals.hip_height_ratio(chart_P, result['standing'].hip_ankle_dy)
+chart_checks = []
+for rep_index, bottom in enumerate(result['bottoms']):
+    rep_value = result['per_rep'][rep_index].get('D1_hip_ankle_rel')
+    series_value = float(chart_ratio[int(bottom)])
+    comparable = isinstance(rep_value, (int, float, np.integer, np.floating)) and math.isfinite(float(rep_value))
+    chart_checks.append({
+        'rep': rep_index + 1,
+        'bottom_frame': int(bottom),
+        'series_percent': series_value * 100.0,
+        'per_rep_percent': float(rep_value) * 100.0 if comparable else None,
+        'abs_diff_percent_point': abs(series_value - float(rep_value)) * 100.0 if comparable else None,
+        'comparable': comparable,
+    })
+comparable_diffs = [row['abs_diff_percent_point'] for row in chart_checks if row['comparable']]
+selected['chart_series'] = {
+    'fps': float(WEB_INPUT['fps']),
+    'hip_height_ratio': chart_ratio,
+    'rep_windows': result['detection'].get('rep_windows', []),
+    'standing_window': list(result['standing'].window),
+    'd1_checks': chart_checks,
+    'd1_max_abs_diff_percent_point': max(comparable_diffs) if comparable_diffs else None,
+    'd1_pass': bool(comparable_diffs) and max(comparable_diffs) <= 0.5,
+}
 json.dumps(clean(selected), ensure_ascii=False)
 `);
     return JSON.parse(output);
@@ -1536,56 +1572,143 @@ function renderReferenceCharts() {
     }),
   ].join('');
   const disclosure = $('#reference-charts');
-  if (window.matchMedia('(max-width: 680px)').matches) disclosure.removeAttribute('open');
-  else disclosure.setAttribute('open', '');
+  disclosure.removeAttribute('open');
+}
+
+function chartFeedbackReps(family) {
+  const reps = new Set();
+  orderedFeedback().filter((item) => feedbackMatchesChart(item, family)).forEach((item) => {
+    (item.reps || []).forEach((rep) => reps.add(Number(rep)));
+  });
+  return reps;
+}
+
+function svgPath(values, xAt, yAt) {
+  let path = '';
+  let drawing = false;
+  values.forEach((value, index) => {
+    if (!finite(value)) {
+      drawing = false;
+      return;
+    }
+    path += `${drawing ? 'L' : 'M'}${xAt(index).toFixed(2)},${yAt(value).toFixed(2)} `;
+    drawing = true;
+  });
+  return path.trim();
+}
+
+function renderTimeSeriesCharts() {
+  const series = state.result.chart_series;
+  if (!series?.d1_pass || !Array.isArray(series.hip_height_ratio)) {
+    return '<p class="series-unavailable">기존 회차 값과 시계열 저점이 일치하지 않아 흐름 그래프를 표시하지 않습니다.</p>';
+  }
+  const hips = series.hip_height_ratio.map((value) => finite(value) ? value * 100 : null);
+  const knees = state.result.per_rep.map((rep) => rep.A2_knee_w_rel_stand);
+  const bottoms = state.result.bottoms || [];
+  const windows = series.rep_windows || [];
+  const fps = finite(series.fps) && series.fps > 0 ? series.fps : state.analysisFps;
+  const frameCount = Math.max(1, hips.length - 1);
+  const seconds = frameCount / fps;
+  const width = 960;
+  const left = 70;
+  const right = 20;
+  const plotWidth = width - left - right;
+  const topY = 42;
+  const topHeight = 184;
+  const lowerY = 292;
+  const lowerHeight = 112;
+  const fullBottom = lowerY + lowerHeight;
+  const hipMax = Math.max(110, Math.ceil(Math.max(...hips.filter(finite), 100) / 10) * 10);
+  const usableKnees = knees.filter((value, index) => repUsable(index) && finite(value));
+  const kneeMedian = median(usableKnees);
+  const kneeMin = usableKnees.length ? Math.min(...usableKnees) : 0;
+  const kneeMax = usableKnees.length ? Math.max(...usableKnees) : 2;
+  const kneePadding = Math.max(.08, (kneeMax - kneeMin) * .2);
+  const kneeLow = Math.max(0, kneeMin - kneePadding);
+  const kneeHigh = Math.max(kneeLow + .2, kneeMax + kneePadding);
+  const xAt = (frame) => left + Math.max(0, Math.min(frameCount, frame)) / frameCount * plotWidth;
+  const hipY = (value) => topY + topHeight - Math.max(0, Math.min(hipMax, value)) / hipMax * topHeight;
+  const kneeY = (value) => lowerY + lowerHeight - (Math.max(kneeLow, Math.min(kneeHigh, value)) - kneeLow) / (kneeHigh - kneeLow) * lowerHeight;
+  const kneeFlagged = chartFeedbackReps('knee');
+  const depthFlagged = chartFeedbackReps('depth');
+  const anyFlagged = new Set([...kneeFlagged, ...depthFlagged]);
+  const standing = series.standing_window || [0, 0];
+  const standingX = xAt(standing[0] || 0);
+  const standingWidth = Math.max(1, xAt(standing[1] || 0) - standingX);
+  const ranges = windows.map((window, index) => {
+    if (!anyFlagged.has(index + 1)) return '';
+    const x = xAt(window[0]);
+    const w = Math.max(3, xAt(window[1]) - x);
+    const metric = kneeFlagged.has(index + 1) ? 'A2_knee_w_rel_stand' : 'D1_hip_ankle_rel';
+    return `<rect class="series-alert-range series-rep-target" x="${x.toFixed(2)}" y="${topY}" width="${w.toFixed(2)}" height="${fullBottom - topY}" data-rep="${index}" data-metric="${metric}" tabindex="0" role="button"><title>${index + 1}회차 근거 장면 보기</title></rect>`;
+  }).join('');
+  const hipPoints = bottoms.map((bottom, index) => {
+    const value = hips[bottom];
+    if (!finite(value)) return '';
+    const flagged = depthFlagged.has(index + 1);
+    const active = index === state.selectedRep;
+    return `<g class="series-point series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="D1_hip_ankle_rel" tabindex="0" role="button" aria-label="${index + 1}회차 골반 높이 ${Math.round(value)}%, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${hipY(value).toFixed(2)}" r="7"/><text x="${xAt(bottom).toFixed(2)}" y="${(hipY(value) - 13).toFixed(2)}">${index + 1}</text></g>`;
+  }).join('');
+  const kneePoints = bottoms.map((bottom, index) => {
+    const value = knees[index];
+    if (!finite(value) || !repUsable(index)) return '';
+    const flagged = kneeFlagged.has(index + 1);
+    const active = index === state.selectedRep;
+    return `<g class="series-point knee series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="A2_knee_w_rel_stand" tabindex="0" role="button" aria-label="${index + 1}회차 무릎 간격 ${multiple(value)}, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${kneeY(value).toFixed(2)}" r="7"/><text x="${xAt(bottom).toFixed(2)}" y="${(kneeY(value) - 13).toFixed(2)}">${index + 1}</text></g>`;
+  }).join('');
+  const timeTicks = Array.from({ length: 5 }, (_, index) => {
+    const ratio = index / 4;
+    const x = left + ratio * plotWidth;
+    return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + 20}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
+  }).join('');
+  const hipPath = svgPath(hips, xAt, hipY);
+  return `
+    <div class="series-chart-wrap">
+      <svg class="series-chart" viewBox="0 0 ${width} 440" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
+        <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${fullBottom - topY}"/>
+        ${ranges}
+        <text class="series-title" x="${left}" y="21">골반 높이 흐름</text>
+        <text class="series-detail" x="${left + 132}" y="21">준비자세 = 100% · 내려갈수록 값이 작아짐</text>
+        <line class="series-axis" x1="${left}" y1="${topY}" x2="${left}" y2="${topY + topHeight}"/>
+        <line class="series-axis" x1="${left}" y1="${topY + topHeight}" x2="${width - right}" y2="${topY + topHeight}"/>
+        <line class="series-standing-line" x1="${left}" y1="${hipY(100)}" x2="${width - right}" y2="${hipY(100)}"/>
+        <text class="series-axis-label" x="${left - 10}" y="${hipY(100) + 4}" text-anchor="end">100%</text>
+        <text class="series-reference-label" x="${width - right - 3}" y="${hipY(100) - 7}" text-anchor="end">준비자세 100%</text>
+        <path class="series-hip-line" d="${hipPath}"/>
+        ${hipPoints}
+        <text class="series-title" x="${left}" y="270">반복마다의 무릎 간격</text>
+        <text class="series-detail" x="${left + 190}" y="270">준비자세 = 1배 · 점은 각 회차의 저점</text>
+        <line class="series-axis" x1="${left}" y1="${lowerY}" x2="${left}" y2="${fullBottom}"/>
+        <line class="series-axis" x1="${left}" y1="${fullBottom}" x2="${width - right}" y2="${fullBottom}"/>
+        ${finite(kneeMedian) ? `<line class="series-median-line" x1="${left}" y1="${kneeY(kneeMedian)}" x2="${width - right}" y2="${kneeY(kneeMedian)}"/><text class="series-reference-label" x="${width - right - 3}" y="${kneeY(kneeMedian) - 7}" text-anchor="end">세트 중앙값 ${multiple(kneeMedian)}</text>` : ''}
+        ${kneePoints}
+        <g class="series-time-axis">${timeTicks}</g>
+      </svg>
+    </div>`;
+}
+
+function bindSeriesTargets() {
+  document.querySelectorAll('.series-rep-target').forEach((target) => {
+    const choose = () => void selectRep(Number(target.dataset.rep), target.dataset.metric);
+    target.addEventListener('click', choose);
+    target.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      choose();
+    });
+  });
 }
 
 function renderRepCharts() {
-  const kneeValues = state.result.per_rep.map((rep) => rep.A2_knee_w_rel_stand);
-  const pelvisHeightValues = state.result.per_rep.map((rep) => (
-    finite(rep.D1_hip_ankle_rel) ? rep.D1_hip_ankle_rel : null
-  ));
   const count = state.result.per_rep.length;
-  const kneeFeedback = orderedFeedback().find((item) => feedbackMatchesChart(item, 'knee'));
-  const kneeMedian = median(kneeValues.filter((value, index) => repUsable(index) && finite(value)));
-  const kneeNarrowest = displayedExtremeReps('A2_knee_w_rel_stand', 'min', multiple);
-  const deepest = displayedExtremeReps('D1_hip_ankle_rel', 'min', percent);
-  const shallowest = displayedExtremeReps('D1_hip_ankle_rel', 'max', percent);
   const scroll = $('#rep-chart-scroll');
   scroll.classList.toggle('scrollable', count > 12);
-  $('#rep-chart-inner').style.minWidth = count > 12 ? `${count * 30}px` : '';
-  $('#rep-chart-inner').innerHTML = [
-    renderBarChart({
-      family: 'knee',
-      title: '무릎 간격',
-      detail: '준비자세 대비',
-      metric: 'A2_knee_w_rel_stand',
-      values: kneeValues,
-      summary: kneeFeedback ? feedbackSentence(kneeFeedback) : finite(kneeMedian)
-        ? `보통 ${multiple(kneeMedian)}${kneeNarrowest.index >= 0 ? ` · 가장 좁았던 ${repNumbersText(kneeNarrowest.reps)} ${multiple(kneeNarrowest.value)}` : ''}`
-        : '무릎 간격을 비교할 수 있는 회차가 없습니다.',
-      help: '1배는 준비자세의 무릎 간격입니다. 막대가 낮을수록 준비자세보다 무릎 간격이 좁게 보인 회차입니다.',
-      valueFormatter: multiple,
-      medianFormatter: (value) => `약 ${multiple(value)}`,
-    }),
-    renderBarChart({
-      family: 'depth',
-      title: '골반 높이',
-      detail: '준비자세 = 100% · 낮을수록 더 내려감',
-      metric: 'D1_hip_ankle_rel',
-      values: pelvisHeightValues,
-      summary: deepest.index >= 0 && shallowest.index >= 0 ? `가장 많이 내려간 회차는 ${repNumbersText(deepest.reps)}, 가장 덜 내려간 회차는 ${repNumbersText(shallowest.reps)}입니다.` : '',
-      help: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 막대가 짧을수록 골반이 더 내려간 회차이며 실제 cm나 3D 깊이가 아닙니다.',
-      valueFormatter: percent,
-      medianFormatter: (value) => `골반 높이 ${percent(value)}`,
-      scaleCeiling: 1,
-      referenceValue: 1,
-      referenceLabel: '준비자세 100%',
-    }),
-  ].join('');
+  $('#rep-chart-inner').style.minWidth = count > 12 ? `${Math.max(920, count * 75)}px` : '';
+  $('#rep-chart-inner').innerHTML = renderTimeSeriesCharts();
   renderReferenceCharts();
   $('#rep-chart-caption').textContent = feedbackSentence(primaryFeedback())
     || '반복 사이 큰 변화가 두드러지지 않았습니다.';
+  bindSeriesTargets();
   document.querySelectorAll('button.rep-bar-button').forEach((button) => {
     button.addEventListener('click', () => {
       void selectRep(Number(button.dataset.rep), button.dataset.metric);
@@ -1620,7 +1743,7 @@ function medianBar(value, values, excluded, label, formatter = percent) {
 }
 
 function updateRepSelection() {
-  document.querySelectorAll('.rep-overview-card, .rep-bar-button').forEach((card) => {
+  document.querySelectorAll('.rep-overview-card, .rep-bar-button, .series-point').forEach((card) => {
     const active = Number(card.dataset.rep) === state.selectedRep;
     card.classList.toggle('active', active);
     card.setAttribute('aria-current', active ? 'true' : 'false');
