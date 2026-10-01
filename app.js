@@ -76,6 +76,7 @@ const recordBadge = $('#record-badge');
 const recordTime = $('#record-time');
 const captureStatus = $('#capture-status');
 const captureStatusMain = $('#capture-status-main');
+const captureStatusAction = $('#capture-status-action');
 const captureStatusDetail = $('#capture-status-detail');
 const cameraStage = $('#camera-stage');
 const previewOverlay = $('#preview-overlay');
@@ -172,10 +173,6 @@ function multiple(value) {
   return finite(value) ? `${value.toFixed(1)}배` : '확인 어려움';
 }
 
-function depthDrop(value) {
-  return finite(value) ? 1 - value : null;
-}
-
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -225,7 +222,7 @@ function showAnalysisError(error) {
   $('.analysis-retry').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
 }
 
-function setCaptureStatus(key, main, { detail = '', metrics = null } = {}) {
+function setCaptureStatus(key, main, { action = '', detail = '', metrics = null } = {}) {
   const changed = state.captureStatusKey !== key;
   if (changed) {
     console.info('[solo-capture]', {
@@ -238,7 +235,9 @@ function setCaptureStatus(key, main, { detail = '', metrics = null } = {}) {
   }
   state.capturePhase = key;
   captureStatusMain.textContent = main;
+  captureStatusAction.textContent = action;
   captureStatusDetail.textContent = detail;
+  setHidden(captureStatusAction, !action);
   setHidden(captureStatusDetail, !detail);
   setHidden(captureStatus, false);
 }
@@ -247,6 +246,7 @@ function hideCaptureStatus() {
   state.captureStatusKey = null;
   state.capturePhase = 'idle';
   captureStatusMain.textContent = '';
+  captureStatusAction.textContent = '';
   captureStatusDetail.textContent = '';
   setHidden(captureStatus, true);
 }
@@ -514,8 +514,25 @@ function medianNumber(values) {
   return usable.length % 2 ? usable[middle] : (usable[middle - 1] + usable[middle]) / 2;
 }
 
+const READINESS_ACTION = Object.freeze({
+  no_person: '화면 안으로 들어오세요',
+  head_cut: '머리까지 보이게',
+  feet_cut: '발끝까지 보이게',
+  weak_tracking: '조금 더 밝은 곳으로',
+  too_close: '한 걸음 뒤로',
+  too_far: '한 걸음 앞으로',
+  edge: '가운데로 와 주세요',
+  moving: '잠시 그대로 서 계세요',
+  ready: '시작하세요!',
+});
+
+function readinessAction(key) {
+  return READINESS_ACTION[key] || '';
+}
+
 function setReadinessStatus(readiness) {
   setCaptureStatus(readiness.key, '위치 조정', {
+    action: readinessAction(readiness.key),
     detail: readiness.message,
     metrics: readiness,
   });
@@ -538,7 +555,8 @@ async function beginSoloCountdown() {
   if (state.capturePhase === 'countdown' || !state.lastReadiness?.ready) return;
   const token = ++state.countdownToken;
   setCaptureStatus('countdown', '준비 완료', {
-    detail: '그대로 서 있어 주세요',
+    action: '그대로 서 있어 주세요',
+    detail: '카운트다운이 끝나면 촬영이 시작됩니다',
     metrics: state.lastReadiness,
   });
   playCaptureCue('ready');
@@ -584,7 +602,10 @@ function handleRecordingMonitor(readiness, now) {
     setCaptureStatus(
       startReady ? 'recording_waiting' : `recording_${readiness.key || 'adjust'}`,
       startReady ? '● 촬영 중' : '위치 조정',
-      { detail: startReady ? '잠시 그대로 서 계세요' : readiness.message },
+      {
+        action: startReady ? '잠시 그대로 서 계세요' : readinessAction(readiness.key),
+        detail: startReady ? '준비 상태를 확인하고 있습니다' : readiness.message,
+      },
     );
   } else if (now - state.recordingStartSignalAt < SOLO_CAPTURE_CONFIG.startSignalDisplayMs) {
     setCaptureStatus('recording_start', '시작하세요!', {
@@ -688,7 +709,8 @@ function handleMonitorLandmarks(landmarks, now) {
   const readyElapsedMs = now - state.readinessReadySince;
   const readySecondsLeft = Math.max(1, Math.ceil((SOLO_CAPTURE_CONFIG.readyHoldMs - readyElapsedMs) / 1000));
   setCaptureStatus('ready_hold', '준비 자세 확인 중', {
-    detail: `정면을 보고 ${readySecondsLeft}초만 가만히 서 주세요`,
+    action: '잠시 그대로 서 계세요',
+    detail: `준비 상태 확인 중 · 약 ${readySecondsLeft}초`,
     metrics: readiness,
   });
   if (readyElapsedMs >= SOLO_CAPTURE_CONFIG.readyHoldMs) {
@@ -794,7 +816,8 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(stopButton, false);
   playCaptureCue('start');
   setCaptureStatus('recording_initial_stand', '● 촬영 중', {
-    detail: automatic ? '잠시 그대로 서 계세요' : '준비자세부터 시작해 주세요',
+    action: automatic ? '잠시 그대로 서 계세요' : '',
+    detail: automatic ? '준비 상태를 확인하고 있습니다' : '준비자세부터 시작해 주세요',
   });
 }
 
@@ -818,7 +841,10 @@ async function stopRecording({ reason = 'manual', analysisEndSeconds = null } = 
     state.captureRecordMeta.stopReason = reason;
     state.captureRecordMeta.analysisEndSeconds = endSeconds;
   }
-  setCaptureStatus('capture_complete', '촬영 완료', { detail: '휴대폰으로 와 주세요' });
+  setCaptureStatus('capture_complete', '촬영 완료', {
+    action: '휴대폰으로 와 주세요',
+    detail: '분석을 준비하고 있습니다',
+  });
   playCaptureCue('complete');
   try {
     const stopped = once(state.recorder, 'stop', 'error', 10000);
@@ -1245,14 +1271,11 @@ function renderSummary() {
   const shallow = extremeRep('D1_hip_ankle_rel', 'max');
   const usableCount = state.result.per_rep.filter((_, index) => repUsable(index)).length;
   const kneeValues = metricValues('A2_knee_w_rel_stand');
-  const depthValues = state.result.per_rep
-    .map((rep, index) => (repUsable(index) && finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null))
-    .filter(finite);
+  const pelvisHeightValues = metricValues('D1_hip_ankle_rel');
   const timingValues = rhythmValues().filter(finite);
-  const averageDepth = mean(depthValues);
+  const pelvisHeightMedian = median(pelvisHeightValues);
+  const kneeMedian = median(kneeValues);
   const averageRhythm = mean(timingValues);
-  const kneeMinimum = kneeValues.length ? Math.min(...kneeValues) : Number.NaN;
-  const kneeMaximum = kneeValues.length ? Math.max(...kneeValues) : Number.NaN;
   const primary = primaryFeedback();
   $('#result-title').textContent = `${state.result.n_reps}회의 저점 장면을 나누어 보았습니다.`;
   $('#result-lead').textContent = primary
@@ -1260,39 +1283,14 @@ function renderSummary() {
     : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
   $('#result-summary').innerHTML = `
     <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수 · 값에 사용 ${usableCount}회</small></div>
-    <div class="summary-chip"><strong>${finite(averageDepth) ? `평균 ${percent(averageDepth)} 내려감` : '확인 어려움'}</strong><small>평균 깊이</small></div>
-    <div class="summary-chip"><strong>${finite(kneeMinimum) && finite(kneeMaximum) ? `${kneeMinimum.toFixed(1)}~${kneeMaximum.toFixed(1)}배` : '확인 어려움'}</strong><small>무릎 간격 범위 · 준비자세 대비</small></div>
+    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? `골반 높이 ${percent(pelvisHeightMedian)}` : '확인 어려움'}</strong><small>가장 낮은 순간 · 준비자세 = 100%</small></div>
+    <div class="summary-chip"><strong>${finite(kneeMedian) && kneeNarrow.index >= 0 ? `보통 ${multiple(kneeMedian)} · 가장 좁았던 ${kneeNarrow.index + 1}회차 ${multiple(kneeNarrow.value)}` : '확인 어려움'}</strong><small>무릎 간격 · 준비자세 대비</small></div>
     <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬 · 참고</small></div>
   `;
-  const rows = state.result.per_rep
-    .map((rep, index) => ({
-      index,
-      knee: repUsable(index) && finite(rep.A2_knee_w_rel_stand) ? rep.A2_knee_w_rel_stand : null,
-      depth: repUsable(index) && finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null,
-    }))
-    .filter((row) => finite(row.knee) && finite(row.depth));
-  const half = Math.floor(rows.length / 2);
-  const early = rows.slice(0, half);
-  const late = half ? rows.slice(-half) : [];
-  const kneeDelta = half ? mean(late.map((row) => row.knee)) - mean(early.map((row) => row.knee)) : Number.NaN;
-  const depthDelta = half ? mean(late.map((row) => row.depth)) - mean(early.map((row) => row.depth)) : Number.NaN;
   const extremeSentence = deep.index >= 0 && shallow.index >= 0 && kneeWide.index >= 0 && kneeNarrow.index >= 0
     ? `가장 깊었던 회차는 ${deep.index + 1}회차, 가장 얕았던 회차는 ${shallow.index + 1}회차입니다. 무릎 간격은 ${kneeWide.index + 1}회차가 가장 넓고 ${kneeNarrow.index + 1}회차가 가장 좁았습니다.`
     : '확인할 수 있는 회차의 흐름만 표시합니다.';
-  const depthSentence = finite(depthDelta)
-    ? Math.round(Math.abs(depthDelta * 100)) === 0
-      ? `후반 ${half}회와 초반 ${half}회의 평균 깊이는 같았습니다.`
-      : `후반 ${half}회는 초반보다 평균 ${Math.abs(depthDelta * 100).toFixed(0)}%p ${depthDelta > 0 ? '더' : '덜'} 내려갔습니다.`
-    : '초반과 후반의 평균 깊이를 비교하기에 회차가 부족합니다.';
-  const kneeSentence = finite(kneeDelta)
-    ? Number(Math.abs(kneeDelta).toFixed(1)) === 0
-      ? `후반 ${half}회와 초반 ${half}회의 평균 무릎 간격은 소수점 한 자리에서 같게 보였습니다.`
-      : `후반 ${half}회는 초반보다 무릎 간격이 평균 ${Math.abs(kneeDelta).toFixed(1)}배 ${kneeDelta > 0 ? '넓게' : '좁게'} 보였습니다.`
-    : '';
-  $('#result-flow').innerHTML = `
-    <p>${escapeHtml(extremeSentence)}</p>
-    <p>${escapeHtml([depthSentence, kneeSentence].filter(Boolean).join(' '))}${primary ? '' : ' 관찰 알림을 띄울 만큼의 변화는 아니었습니다.'}</p>
-  `;
+  $('#result-flow').innerHTML = `<p>${escapeHtml(extremeSentence)}</p>`;
   setHidden($('#low-rep-note'), !(state.result.n_reps >= 4 && state.result.n_reps <= 5));
   return { knee: kneeNarrow, deep };
 }
@@ -1347,8 +1345,8 @@ function feedbackSentence(item) {
   const repText = reps.map((rep) => `${rep}회차`).join('·');
   if (item.rule_id === 'KNEE_LATE') return `후반 반복(${repText})에서 무릎 간격이 초반보다 좁아지는 경향이 보였습니다.`;
   if (item.rule_id === 'KNEE_REP') return `${repText}에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다.`;
-  if (item.rule_id === 'DEPTH_LATE') return `후반 반복(${repText})에서 골반이 내려간 정도가 초반보다 작아지는 경향이 보였습니다.`;
-  if (item.rule_id === 'DEPTH_REP') return `${repText}에서 골반이 내려간 정도가 다른 반복보다 작았습니다.`;
+  if (item.rule_id === 'DEPTH_LATE') return `후반 반복(${repText})에서 골반 높이가 초반보다 높아지는 경향이 보였습니다.`;
+  if (item.rule_id === 'DEPTH_REP') return `${repText}에서 골반 높이가 다른 반복보다 높았습니다.`;
   return item.text || '';
 }
 
@@ -1373,14 +1371,22 @@ function renderBarChart({
   valueFormatter = percent,
   medianFormatter = valueFormatter,
   reference = false,
+  scaleCeiling = null,
+  referenceValue = null,
+  referenceLabel = '',
   missingLabel = '제외',
 }) {
   const usableValues = values.filter((value, index) => repUsable(index) && finite(value));
   const middle = median(usableValues);
   const maximum = Math.max(0, ...usableValues, finite(middle) ? middle : 0);
-  const scaleMaximum = maximum > 0 ? maximum * 1.12 : 1;
+  const scaleMaximum = finite(scaleCeiling)
+    ? Math.max(scaleCeiling, maximum > scaleCeiling ? maximum * 1.05 : scaleCeiling)
+    : maximum > 0 ? maximum * 1.12 : 1;
   const barAreaHeight = 128;
   const medianBottom = 27 + Math.max(0, Math.min(1, middle / scaleMaximum)) * barAreaHeight;
+  const referenceBottom = finite(referenceValue)
+    ? 27 + Math.max(0, Math.min(1, referenceValue / scaleMaximum)) * barAreaHeight
+    : null;
   const earlyReps = reference ? new Set() : chartEarlyReps(family);
   const feedback = reference ? [] : orderedFeedback().filter((item) => feedbackMatchesChart(item, family));
   const bars = values.map((value, index) => {
@@ -1413,6 +1419,7 @@ function renderBarChart({
       ${summary ? `<p class="rep-bar-summary">${escapeHtml(summary)}</p>` : ''}
       <div class="rep-bar-stage">
         <span class="rep-chart-zero">0</span>
+        ${finite(referenceBottom) ? `<span class="rep-chart-reference" style="bottom:${referenceBottom}px"><em>${escapeHtml(referenceLabel)}</em></span>` : ''}
         ${finite(middle) ? `<span class="rep-chart-median" style="bottom:${medianBottom}px"><em>세트 중앙값 ${escapeHtml(medianFormatter(middle))}</em></span>` : ''}
         <div class="rep-bar-grid" style="grid-template-columns:repeat(${values.length},minmax(0,1fr))">${bars}</div>
       </div>
@@ -1438,13 +1445,9 @@ function rhythmValues() {
 }
 
 function rhythmSummary(values) {
-  const usable = values.filter(finite);
-  if (usable.length < 3) return '반복 시간은 앞 회차와 이번 회차의 저점 사이 시간입니다.';
-  const early = usable.slice(0, 3);
-  const late = usable.slice(-3);
-  const earlyMean = early.reduce((sum, value) => sum + value, 0) / early.length;
-  const lateMean = late.reduce((sum, value) => sum + value, 0) / late.length;
-  return `앞 3회 평균 ${earlyMean.toFixed(1)}초, 뒤 3회 평균 ${lateMean.toFixed(1)}초로 ${Math.abs(lateMean - earlyMean).toFixed(1)}초 차이가 있었습니다.`;
+  return values.some(finite)
+    ? '반복 시간은 앞 회차와 이번 회차의 저점 사이 시간입니다.'
+    : '반복 시간을 확인할 수 없습니다.';
 }
 
 function renderReferenceCharts() {
@@ -1485,14 +1488,15 @@ function renderReferenceCharts() {
 
 function renderRepCharts() {
   const kneeValues = state.result.per_rep.map((rep) => rep.A2_knee_w_rel_stand);
-  const depthValues = state.result.per_rep.map((rep) => (
-    finite(rep.D1_hip_ankle_rel) ? 1 - rep.D1_hip_ankle_rel : null
+  const pelvisHeightValues = state.result.per_rep.map((rep) => (
+    finite(rep.D1_hip_ankle_rel) ? rep.D1_hip_ankle_rel : null
   ));
   const count = state.result.per_rep.length;
   const kneeFeedback = orderedFeedback().find((item) => feedbackMatchesChart(item, 'knee'));
   const kneeMedian = median(kneeValues.filter((value, index) => repUsable(index) && finite(value)));
-  const deepest = transformedExtreme(depthValues, 'max');
-  const shallowest = transformedExtreme(depthValues, 'min');
+  const kneeNarrowest = transformedExtreme(kneeValues, 'min');
+  const deepest = transformedExtreme(pelvisHeightValues, 'min');
+  const shallowest = transformedExtreme(pelvisHeightValues, 'max');
   const scroll = $('#rep-chart-scroll');
   scroll.classList.toggle('scrollable', count > 12);
   $('#rep-chart-inner').style.minWidth = count > 12 ? `${count * 30}px` : '';
@@ -1500,11 +1504,11 @@ function renderRepCharts() {
     renderBarChart({
       family: 'knee',
       title: '무릎 간격',
-      detail: 'A2 · 준비자세 대비',
+      detail: '준비자세 대비',
       metric: 'A2_knee_w_rel_stand',
       values: kneeValues,
       summary: kneeFeedback ? feedbackSentence(kneeFeedback) : finite(kneeMedian)
-        ? `모든 회차에서 무릎이 서 있을 때의 약 ${multiple(kneeMedian)}로 벌어졌습니다.`
+        ? `보통 ${multiple(kneeMedian)}${kneeNarrowest.index >= 0 ? ` · 가장 좁았던 ${kneeNarrowest.index + 1}회차 ${multiple(kneeNarrowest.value)}` : ''}`
         : '무릎 간격을 비교할 수 있는 회차가 없습니다.',
       help: '1배는 준비자세의 무릎 간격입니다. 막대가 낮을수록 준비자세보다 무릎 간격이 좁게 보인 회차입니다.',
       valueFormatter: multiple,
@@ -1512,14 +1516,17 @@ function renderRepCharts() {
     }),
     renderBarChart({
       family: 'depth',
-      title: '골반이 내려간 정도',
-      detail: '100% − 골반–발목 세로거리 · 높을수록 깊음',
+      title: '골반 높이',
+      detail: '준비자세 = 100% · 낮을수록 더 내려감',
       metric: 'D1_hip_ankle_rel',
-      values: depthValues,
+      values: pelvisHeightValues,
       summary: deepest.index >= 0 && shallowest.index >= 0 ? `가장 깊게 앉은 회차는 ${deepest.index + 1}회차, 가장 얕은 회차는 ${shallowest.index + 1}회차입니다.` : '',
-      help: '준비자세에서 골반과 발목 사이의 세로거리를 기준으로, 저점에서 줄어든 정도입니다. 막대가 높을수록 골반이 더 내려간 회차입니다.',
-      valueFormatter: (value) => `${percent(value)} 내려감`,
-      medianFormatter: (value) => `${percent(value)} 내려감`,
+      help: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 막대가 짧을수록 골반이 더 내려간 회차이며 실제 cm나 3D 깊이가 아닙니다.',
+      valueFormatter: percent,
+      medianFormatter: (value) => `골반 높이 ${percent(value)}`,
+      scaleCeiling: 1,
+      referenceValue: 1,
+      referenceLabel: '준비자세 100%',
     }),
   ].join('');
   renderReferenceCharts();
@@ -1589,12 +1596,14 @@ function observeRepThumbnails() {
 
 function renderRepOverview() {
   const kneeValues = metricValues('A2_knee_w_rel_stand');
-  const depthValues = state.result.per_rep
-    .map((rep, index) => (repUsable(index) ? depthDrop(rep.D1_hip_ankle_rel) : null))
+  const pelvisHeightValues = state.result.per_rep
+    .map((rep, index) => (repUsable(index) && finite(rep.D1_hip_ankle_rel) ? rep.D1_hip_ankle_rel : null))
     .filter(finite);
-  const depthByRep = state.result.per_rep.map((rep) => depthDrop(rep.D1_hip_ankle_rel));
-  const deepest = transformedExtreme(depthByRep, 'max');
-  const shallowest = transformedExtreme(depthByRep, 'min');
+  const pelvisHeightByRep = state.result.per_rep.map((rep) => (
+    finite(rep.D1_hip_ankle_rel) ? rep.D1_hip_ankle_rel : null
+  ));
+  const deepest = transformedExtreme(pelvisHeightByRep, 'min');
+  const shallowest = transformedExtreme(pelvisHeightByRep, 'max');
   $('#rep-grid').innerHTML = state.result.per_rep.map((rep, index) => {
     const excluded = !repUsable(index);
     const tags = feedbackTagsForRep(index);
@@ -1605,7 +1614,7 @@ function renderRepOverview() {
     else notes.push('다른 반복과 큰 차이 없음');
     if (!excluded && index === deepest.index) notes.push('세트에서 가장 깊음');
     if (!excluded && index === shallowest.index) notes.push('세트에서 가장 얕음');
-    const depthValue = depthByRep[index];
+    const pelvisHeightValue = pelvisHeightByRep[index];
     return `
       <button class="rep-overview-card ${tags.length ? 'flagged' : ''} ${excluded ? 'excluded' : ''} ${index === state.selectedRep ? 'active' : ''}" data-rep="${index}" role="listitem" aria-current="${index === state.selectedRep}">
         <span class="rep-thumbnail-wrap">
@@ -1615,7 +1624,7 @@ function renderRepOverview() {
         <span class="rep-overview-body">
           <span class="rep-overview-head"><strong>${index + 1}회차</strong>${excluded ? '<em>값 제외</em>' : ''}</span>
           <span class="rep-overview-metric"><span><small>무릎 간격</small><b>${excluded ? '—' : multiple(rep.A2_knee_w_rel_stand)}</b></span>${medianBar(rep.A2_knee_w_rel_stand, kneeValues, excluded, '무릎 간격', multiple)}</span>
-          <span class="rep-overview-metric"><span><small>골반이 내려간 정도</small><b>${excluded ? '—' : `${percent(depthValue)} 내려감`}</b></span>${medianBar(depthValue, depthValues, excluded, '골반이 내려간 정도', (value) => `${percent(value)} 내려감`)}</span>
+          <span class="rep-overview-metric"><span><small>골반 높이</small><b>${excluded ? '—' : percent(pelvisHeightValue)}</b></span>${medianBar(pelvisHeightValue, pelvisHeightValues, excluded, '골반 높이', (value) => `골반 높이 ${percent(value)}`)}</span>
           <span class="rep-overview-note">${notes.map(escapeHtml).join(' · ')}</span>
         </span>
       </button>`;
@@ -1642,9 +1651,9 @@ function renderObservation(index) {
       note: '준비자세의 무릎 간격을 1배로 본 값입니다.',
     },
     {
-      label: '골반이 내려간 정도',
-      value: `${percent(depthDrop(rep.D1_hip_ankle_rel))} 내려감`,
-      note: '준비자세의 골반–발목 세로거리를 기준으로 계산했습니다. 값이 클수록 골반이 더 내려간 회차입니다.',
+      label: '가장 낮은 순간의 골반 높이',
+      value: `골반 높이 ${percent(rep.D1_hip_ankle_rel)}`,
+      note: '준비자세의 골반–발목 세로거리를 100%로 본 상대값입니다. 값이 작을수록 더 내려간 회차입니다.',
     },
   ];
   if (finite(rep.C1_trunk_span_rel)) {
@@ -1839,9 +1848,9 @@ function representativeRepIndex(metric) {
 
 function comparisonMetricMeta(metric) {
   if (metric === 'D1_hip_ankle_rel') {
-    return { label: '골반이 내려간 정도', detail: '100% − 골반–발목 세로거리', value: (raw) => 1 - raw, format: (value) => `${percent(value)} 내려감` };
+    return { label: '골반 높이', value: (raw) => raw, format: percent };
   }
-  return { label: '무릎 간격', detail: '준비자세 대비 무릎 간격', value: (raw) => raw, format: multiple };
+  return { label: '무릎 간격', value: (raw) => raw, format: multiple };
 }
 
 async function renderComparison() {
@@ -1859,7 +1868,7 @@ async function renderComparison() {
   const targetValue = finite(target[metric]) ? meta.value(target[metric]) : null;
   const referenceValue = finite(reference[metric]) ? meta.value(reference[metric]) : null;
   $('#compare-card').innerHTML = `
-    <div class="compare-heading"><div><p class="card-label">회차 비교</p><h3>나란히 비교</h3></div><p>기준은 ${escapeHtml(meta.detail)}이 세트 중앙값에 가장 가까운 회차입니다.</p></div>
+    <div class="compare-heading"><div><p class="card-label">회차 비교</p><h3>나란히 비교</h3></div><p>평소 회차 = 이 세트에서 보통에 가까웠던 회차</p></div>
     <div class="compare-grid">
       <div class="compare-item compare-shot selected"><small>선택 · ${targetIndex + 1}회차 저점</small><canvas id="compare-target"></canvas><strong>${meta.label} ${repUsable(targetIndex) ? meta.format(targetValue) : '확인 어려움'}</strong></div>
       <div class="compare-item compare-shot"><small>평소 · ${referenceIndex + 1}회차 저점</small><canvas id="compare-reference"></canvas><strong>${meta.label} ${meta.format(referenceValue)}</strong></div>
