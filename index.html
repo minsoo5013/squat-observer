@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-camera-portrait">
+  <link rel="stylesheet" href="./styles.css?v=20261001-final">
 </head>
 <body>
   <header class="site-header">
@@ -20,7 +20,7 @@
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <h1>스쿼트 한 세트의 무릎 간격과 깊이 변화를 장면으로 확인하세요</h1>
+        <h1>스쿼트 한 세트의 무릎 간격과 골반 높이 변화를 장면으로 확인하세요</h1>
         <p class="hero-lede">달라진 부분과 관련된 국민체력100 스트레칭 영상을 연결하고, 한 세트 더 하면 직전 세트와 비교합니다.</p>
         <div class="hero-actions">
           <button class="button button-primary desktop-capture-action" data-action="go-capture">촬영해서 분석하기</button>
@@ -28,41 +28,35 @@
           <button class="button button-primary mobile-only mobile-upload-action" data-action="go-capture">혼자 촬영 시작하기</button>
           <button class="button button-quiet" id="sample-button" hidden>샘플로 전체 흐름 보기</button>
         </div>
-        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
+        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.<br>처음 분석할 때는 준비에 조금 더 시간이 걸릴 수 있습니다.</p>
       </div>
       <aside class="result-preview" aria-label="결과 화면 예시">
         <div class="preview-heading"><strong>결과 화면 예시</strong><span>실제 값은 분석 후 표시됩니다</span></div>
-        <div class="preview-context"><span>세트 안의 반복 비교</span><strong>8회 반복 감지</strong></div>
-        <div class="preview-grid">
-          <div class="preview-evidence">
-            <div class="preview-evidence-head">
-              <small>반복별 무릎 간격 변화</small>
-              <span><i aria-hidden="true"></i> 선택된 반복</span>
-            </div>
-            <div class="trend-panel" role="img" aria-label="초반보다 후반 반복에서 무릎 간격이 점차 좁아지고 여섯 번째 반복이 우선 확인 장면으로 선택된 결과 예시">
-              <div class="trend-meta" aria-hidden="true"><span>초반 기준</span><span>반복 진행</span></div>
-              <svg viewBox="0 0 360 154" aria-hidden="true">
-                <path class="trend-grid" d="M24 28H340M24 68H340M24 108H340"/>
-                <path class="trend-baseline" d="M24 49H340"/>
-                <path class="trend-area" d="M28 51L72 54L116 56L160 62L204 70L248 84L292 91L336 96L336 116L28 116Z"/>
-                <path class="trend-line" d="M28 51L72 54L116 56L160 62L204 70L248 84L292 91L336 96"/>
-                <g class="trend-dots">
-                  <circle cx="28" cy="51" r="4"/><circle cx="72" cy="54" r="4"/><circle cx="116" cy="56" r="4"/><circle cx="160" cy="62" r="4"/>
-                  <circle cx="204" cy="70" r="4"/><circle class="selected" cx="248" cy="84" r="7"/><circle cx="292" cy="91" r="4"/><circle cx="336" cy="96" r="4"/>
-                </g>
-                <path class="trend-marker" d="M248 22V116"/>
-                <g class="trend-label" transform="translate(222 12)"><rect width="52" height="22" rx="3"/><text x="26" y="15">우선 확인</text></g>
-              </svg>
-              <div class="trend-reps" aria-hidden="true">
-                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span class="selected">6</span><span>7</span><span>8</span>
-              </div>
-            </div>
-            <p class="trend-caption"><b>6회차</b><span>가장 낮은 장면을 근거로 보여드립니다</span></p>
+        <p class="preview-alert">6회차에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다</p>
+        <div class="preview-summary" aria-label="예시 결과 요약">
+          <div><strong>8회</strong><span>반복 수</span></div>
+          <div><strong>52%</strong><span>보통 골반 높이</span></div>
+          <div><strong>1.6배</strong><span>보통 · 6회차 1.3배</span></div>
+          <div><strong>약 2.6초</strong><span>회당 반복 시간 · 참고</span></div>
+        </div>
+        <div class="preview-bar-card" role="img" aria-label="1회차부터 8회차까지 무릎 간격은 각각 1.60, 1.62, 1.59, 1.61, 1.63, 1.30, 1.60, 1.62배이며 6회차가 강조된 막대그래프">
+          <div class="preview-bar-head"><strong>무릎 간격 · 회차별</strong><span>세트 중앙값 1.6배</span></div>
+          <div class="preview-bars" aria-hidden="true">
+            <i class="preview-median-line"><span>중앙값</span></i>
+            <span style="--bar:80%"><b>1.60</b><i></i><small>1회</small></span>
+            <span style="--bar:81%"><b>1.62</b><i></i><small>2회</small></span>
+            <span style="--bar:79.5%"><b>1.59</b><i></i><small>3회</small></span>
+            <span style="--bar:80.5%"><b>1.61</b><i></i><small>4회</small></span>
+            <span style="--bar:81.5%"><b>1.63</b><i></i><small>5회</small></span>
+            <span class="flagged" style="--bar:65%"><em>좁음</em><b>1.30</b><i></i><small>6회</small></span>
+            <span style="--bar:80%"><b>1.60</b><i></i><small>7회</small></span>
+            <span style="--bar:81%"><b>1.62</b><i></i><small>8회</small></span>
           </div>
-          <div class="preview-notes">
-            <div class="preview-point"><small>한 가지 관찰 포인트</small><strong>예) 후반 반복에서 무릎 간격이 초반보다 좁아지는 경향이 보였습니다</strong></div>
-            <div class="preview-content"><small>관련 콘텐츠</small><strong>관련 부위 스트레칭 콘텐츠</strong><span class="preview-source-tag">국민체력100</span></div>
-          </div>
+        </div>
+        <div class="preview-content-list">
+          <p><span>관련 부위 스트레칭 콘텐츠</span><strong>서서 발목 누르기</strong><small>국민체력100</small></p>
+          <p><span>함께 해볼 하지 운동</span><strong>4개 콘텐츠</strong></p>
+          <p><span>한 세트 더</span><strong>직전 세트와 비교</strong></p>
         </div>
       </aside>
     </section>
@@ -94,34 +88,45 @@
     </section>
 
     <section class="home-section metrics-section" id="metrics">
-      <div class="home-section-heading"><h2>분석 지표</h2><p>인체 모형을 추정하는 대신, 정면 영상에서 직접 확인할 수 있는 세 가지 상대 변화를 봅니다.</p></div>
+      <div class="home-section-heading"><h2>이 서비스가 보는 것</h2><p>정면 영상에서 직접 잴 수 있는 값을 준비자세와 비교하고, 같은 세트의 반복끼리 비교합니다.</p></div>
       <div class="metric-cards">
         <article>
           <div class="metric-number" aria-hidden="true">01</div>
-          <div class="metric-bars" aria-hidden="true"><span><b>준비</b><i class="bar-long"></i></span><span><b>저점</b><i class="bar-medium"></i></span></div>
-          <h3>무릎 간격</h3><p>가장 낮은 자세의 무릎 간격을 처음 준비자세와 비교합니다.</p>
+          <div class="metric-pose-diagram knee-gap-diagram" role="img" aria-label="준비자세와 가장 낮은 자세의 무릎 간격을 파란 선으로 비교하는 도식">
+            <svg viewBox="0 0 310 116" aria-hidden="true">
+              <g class="pose-lines"><circle cx="64" cy="18" r="10"/><path d="M64 28V61M41 41H87M64 61L48 99M64 61L80 99M48 99H39M80 99H89"/><circle cx="48" cy="76" r="3"/><circle cx="80" cy="76" r="3"/></g>
+              <g class="pose-lines"><circle cx="229" cy="22" r="10"/><path d="M229 32L229 60M206 43H252M229 60L193 79L181 101M229 60L265 79L277 101M181 101H171M277 101H287"/><circle cx="193" cy="79" r="3"/><circle cx="265" cy="79" r="3"/></g>
+              <g class="knee-measure"><path d="M48 76H80M48 71V81M80 71V81"/><path d="M193 79H265M193 74V84M265 74V84"/></g>
+              <g class="pose-label"><text x="64" y="114">준비자세</text><text x="229" y="114">가장 낮은 자세</text></g>
+            </svg>
+          </div>
+          <div class="metric-example"><span>예시 값</span><strong>1.6배</strong></div>
+          <h3>무릎 간격</h3><p>가장 낮은 자세의 무릎 간격을 준비자세와 비교합니다. 준비자세 = 1배</p>
         </article>
         <article>
           <div class="metric-number" aria-hidden="true">02</div>
-          <div class="metric-bars" aria-hidden="true"><span><b>준비</b><i class="bar-long"></i></span><span><b>저점</b><i class="bar-short"></i></span></div>
-          <h3>무릎의 안쪽 움직임</h3><p>준비자세에서 저점까지 양쪽 무릎이 몸 중앙 쪽으로 움직인 정도를 봅니다.</p>
+          <div class="metric-pose-diagram hip-height-diagram" role="img" aria-label="준비자세와 가장 낮은 자세의 골반에서 발목까지 세로거리를 청록 선으로 비교하는 도식">
+            <svg viewBox="0 0 310 116" aria-hidden="true">
+              <g class="pose-lines"><circle cx="64" cy="18" r="10"/><path d="M64 28V61M41 41H87M64 61L48 99M64 61L80 99M48 99H39M80 99H89"/><circle cx="48" cy="99" r="3"/></g>
+              <g class="pose-lines"><circle cx="229" cy="22" r="10"/><path d="M229 32L229 60M206 43H252M229 60L193 79L181 101M229 60L265 79L277 101M181 101H171M277 101H287"/><circle cx="181" cy="101" r="3"/></g>
+              <g class="hip-measure"><path d="M37 61V99M32 61H42M32 99H42"/><path d="M170 60V101M165 60H175M165 101H175"/></g>
+              <g class="pose-label"><text x="64" y="114">준비자세</text><text x="229" y="114">가장 낮은 자세</text></g>
+            </svg>
+          </div>
+          <div class="metric-example teal"><span>예시 값</span><strong>52%</strong></div>
+          <h3>골반 높이</h3><p>가장 낮은 자세의 골반–발목 세로거리를 준비자세와 비교합니다. 준비자세 = 100%, 낮을수록 깊게 앉음</p>
         </article>
         <article>
           <div class="metric-number" aria-hidden="true">03</div>
-          <div class="metric-bars depth-bars" aria-hidden="true"><span><b>준비</b><i class="bar-long"></i></span><span><b>저점</b><i class="bar-medium"></i></span></div>
-          <h3>가장 낮은 자세의 깊이</h3><p>골반과 발목 사이의 세로거리를 준비자세와 비교합니다.</p>
+          <div class="metric-rep-diagram" role="img" aria-label="8개 반복 막대와 세트 중앙값 점선, 한 회차만 강조한 도식">
+            <i class="metric-median"></i>
+            <span style="--h:68%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:70%"></span><span style="--h:73%"></span><span class="accent" style="--h:44%"></span><span style="--h:69%"></span><span style="--h:71%"></span>
+          </div>
+          <div class="metric-example neutral"><span>알림 예시</span><strong>6회차</strong></div>
+          <h3>반복끼리 비교</h3><p>세트 안에서 한 회차가 눈에 띄게 다르거나, 후반 반복이 초반과 달라질 때만 알려 드립니다.</p>
         </article>
       </div>
-    </section>
-
-    <section class="home-section limits-section service-observes">
-      <div class="home-section-heading"><h2>이 서비스가 보는 것</h2></div>
-      <ul>
-        <li>같은 사람의 반복끼리 비교합니다.</li>
-        <li>달랐던 회차를 원본 장면으로 보여 줍니다.</li>
-        <li>국민체력100 콘텐츠로 이어집니다.</li>
-        <li>영상은 기기 안에서만 처리합니다.</li>
-      </ul>
+      <p class="metric-footnote">참고로 상체 숙임과 반복 리듬도 함께 보여 드립니다.</p>
     </section>
 
     <section class="workspace" id="capture-section">
@@ -138,10 +143,11 @@
         </ol>
       </div>
 
-      <div class="capture-modes" role="tablist" aria-label="촬영 방식 선택">
-        <button class="capture-mode active" role="tab" aria-selected="true" data-capture-mode="solo"><strong>혼자 촬영</strong><span>전면 · 자동 시작·종료</span><em>추천</em></button>
-        <button class="capture-mode" role="tab" aria-selected="false" data-capture-mode="assisted"><strong>다른 사람이 촬영</strong><span>전면·후면 · 수동 시작·종료</span></button>
-        <button class="capture-mode" role="tab" aria-selected="false" data-capture-mode="upload"><strong>기존 영상 업로드</strong><span>앞뒤 이동 장면을 잘라서 선택</span></button>
+      <p class="capture-mode-question" id="capture-mode-question">촬영 방법을 선택하세요</p>
+      <div class="capture-modes" role="radiogroup" aria-labelledby="capture-mode-question">
+        <button class="capture-mode active" role="radio" aria-checked="true" data-capture-mode="solo"><strong>혼자 촬영</strong><span>전면 · 자동 시작·종료</span><em>권장</em></button>
+        <button class="capture-mode" role="radio" aria-checked="false" data-capture-mode="assisted"><strong>다른 사람이 촬영</strong><span>전면·후면 · 수동 시작·종료</span></button>
+        <button class="capture-mode" role="radio" aria-checked="false" data-capture-mode="upload"><strong>기존 영상 업로드</strong><span>이미 찍어 둔 영상 · 걸어오고 가는 장면은 잘라서 올려 주세요</span></button>
       </div>
       <p class="capture-mode-description" id="capture-mode-description">전면 카메라로 준비 상태를 확인한 뒤 자동으로 촬영을 시작하고 마칩니다.</p>
 
@@ -177,7 +183,7 @@
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
-          <p class="local-note">촬영 영상과 관절 좌표는 서버로 전송되지 않습니다.</p>
+          <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.<br>처음 분석할 때는 준비에 조금 더 시간이 걸릴 수 있습니다.</p>
           <p class="capture-helper" id="capture-helper">전신·거리·관절 인식·정지 상태를 확인한 뒤에만 자동으로 시작합니다. 촬영 중 횟수는 진행용 추정이며 최종 결과와 다를 수 있습니다.</p>
           <p class="mobile-upload-note" id="mobile-upload-note" hidden>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p>
         </article>
@@ -315,6 +321,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-camera-portrait"></script>
+  <script type="module" src="./app.js?v=20261001-final"></script>
 </body>
 </html>

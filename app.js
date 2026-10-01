@@ -166,8 +166,12 @@ function formatClock(seconds) {
 
 function formatRemaining(seconds) {
   if (!finite(seconds) || seconds < 0) return '남은 시간 계산 중';
-  if (seconds < 2) return '마무리 중';
-  return `약 ${formatClock(Math.ceil(seconds))} 남음`;
+  if (seconds < 2) return '마무리 중입니다.';
+  const rounded = Math.ceil(seconds);
+  if (rounded < 60) return `약 ${rounded}초 남았습니다.`;
+  const minutes = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return `약 ${minutes}분${remainder ? ` ${remainder}초` : ''} 남았습니다.`;
 }
 
 function finite(value) {
@@ -205,13 +209,14 @@ function showAnalysis(title, detail, progress = 4, count = '') {
   setHidden($('#capture-section'), true);
   setHidden($('#results-section'), true);
   setHidden($('#analysis-section'), false);
-  $('#analysis-title').textContent = title;
+  const isError = progress >= 100 && /못했습니다|오류/.test(title);
   $('#analysis-detail').textContent = detail;
   const safeProgress = Math.max(4, Math.min(100, progress));
+  $('#analysis-title').textContent = isError ? title : `분석 중 ${Math.round(safeProgress)}%`;
   $('#analysis-progress').style.width = `${safeProgress}%`;
   $('.progress').setAttribute('aria-valuenow', String(Math.round(safeProgress)));
   $('.progress').setAttribute('aria-valuetext', count || `${Math.round(safeProgress)}% 진행`);
-  $('#analysis-count').textContent = count;
+  $('#analysis-count').textContent = safeProgress >= 12 && /^(약 |마무리)/.test(count) ? count : '';
   updateStep(2);
   $('#analysis-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -357,7 +362,7 @@ function selectCaptureMode(mode, { preserveStream = false } = {}) {
   document.querySelectorAll('[data-capture-mode]').forEach((button) => {
     const active = button.dataset.captureMode === mode;
     button.classList.toggle('active', active);
-    button.setAttribute('aria-selected', String(active));
+    button.setAttribute('aria-checked', String(active));
   });
   const descriptions = {
     solo: '전면 카메라로 준비 상태를 확인한 뒤 자동으로 촬영을 시작하고 마칩니다.',
@@ -1082,7 +1087,7 @@ async function extractLandmarks() {
         '반복과 관절 움직임을 읽고 있습니다.',
         '영상은 이 기기 안에서 프레임 단위로 처리됩니다.',
         15 + ratio * 66,
-        `${processed} / ${frameCount} 프레임 · ${formatRemaining(remainingSeconds)}`,
+        processed >= 8 ? formatRemaining(remainingSeconds) : '',
       );
       await new Promise((resolve) => requestAnimationFrame(resolve));
     }
@@ -2015,7 +2020,7 @@ function renderNotices() {
 }
 
 function renderFeedback() {
-  const feedback = orderedFeedback().slice(0, 3);
+  const feedback = orderedFeedback();
   setHidden($('#feedback-card'), false);
   $('#feedback-card').classList.toggle('neutral', feedback.length === 0);
   if (!feedback.length) {
