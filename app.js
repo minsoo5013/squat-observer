@@ -1378,7 +1378,7 @@ function renderSummary() {
     <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수 · 값에 사용 ${usableCount}회</small></div>
     <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? `보통 골반 높이 ${percent(pelvisHeightMedian)}` : '확인 어려움'}</strong><small>준비자세 높이를 100%로 비교</small></div>
     <div class="summary-chip"><strong>${finite(kneeMedian) && kneeNarrow.index >= 0 ? `보통 ${multiple(kneeMedian)} · 가장 좁았던 ${repNumbersText(kneeNarrow.reps)} ${multiple(kneeNarrow.value)}` : '확인 어려움'}</strong><small>무릎 간격 · 준비자세 대비</small></div>
-    <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬 · 참고</small></div>
+    <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬</small></div>
   `;
   const extremeSentence = deep.index >= 0 && shallow.index >= 0 && kneeWide.index >= 0 && kneeNarrow.index >= 0
     ? `가장 많이 내려간 회차는 ${repNumbersText(deep.reps)}, 가장 덜 내려간 회차는 ${repNumbersText(shallow.reps)}입니다. 무릎 간격은 ${repNumbersText(kneeWide.reps)}가 가장 넓고 ${repNumbersText(kneeNarrow.reps)}가 가장 좁았습니다.`
@@ -1510,12 +1510,12 @@ function renderBarChart({
   }).join('');
   return `
     <article class="rep-bar-chart family-${escapeHtml(family)} ${reference ? 'reference' : ''}">
-      <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4>${reference ? '<b class="reference-badge">참고</b>' : ''}<span>${escapeHtml(detail)}</span>${help ? `<details class="chart-help"><summary aria-label="${escapeHtml(title)} 읽는 법">ⓘ 읽는 법</summary><p>${escapeHtml(help)}</p></details>` : ''}</div>
+      <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)}${reference && finite(middle) ? ` · 점선은 중앙값 ${escapeHtml(medianFormatter(middle))}` : ''}</span>${help ? `<details class="chart-help"><summary aria-label="${escapeHtml(title)} 읽는 법">ⓘ 읽는 법</summary><p>${escapeHtml(help)}</p></details>` : ''}</div>
       ${summary ? `<p class="rep-bar-summary">${escapeHtml(summary)}</p>` : ''}
       <div class="rep-bar-stage">
         <span class="rep-chart-zero">0</span>
         ${finite(referenceBottom) ? `<span class="rep-chart-reference" style="bottom:${referenceBottom}px"><em>${escapeHtml(referenceLabel)}</em></span>` : ''}
-        ${finite(middle) ? `<span class="rep-chart-median" style="bottom:${medianBottom}px"><em>세트 중앙값 ${escapeHtml(medianFormatter(middle))}</em></span>` : ''}
+        ${finite(middle) ? `<span class="rep-chart-median" style="bottom:${medianBottom}px">${reference ? '' : `<em>세트 중앙값 ${escapeHtml(medianFormatter(middle))}</em>`}</span>` : ''}
         <div class="rep-bar-grid" style="grid-template-columns:repeat(${values.length},minmax(0,1fr))">${bars}</div>
       </div>
     </article>`;
@@ -1554,12 +1554,12 @@ function renderReferenceCharts() {
     renderBarChart({
       family: 'trunk',
       title: '상체 숙임',
-      detail: '준비자세보다 정면 상체 길이가 짧아 보인 정도',
+      detail: '준비자세보다 정면 상체 길이가 짧아 보인 정도(%)',
       metric: '',
       values: trunkValues,
       summary: trunk.index >= 0 ? `${trunk.index + 1}회차에서 상체가 가장 많이 숙여 보였습니다.` : '어깨가 보인 회차에서만 상체 길이를 확인합니다.',
-      valueFormatter: (value) => `${percent(value)} 짧아 보임`,
-      medianFormatter: (value) => `${percent(value)} 짧아 보임`,
+      valueFormatter: (value) => percent(value),
+      medianFormatter: (value) => percent(value),
       reference: true,
       missingLabel: '어깨 가림',
     }),
@@ -1576,8 +1576,7 @@ function renderReferenceCharts() {
       missingLabel: (index) => (index === 0 ? '첫 회차' : '확인 어려움'),
     }),
   ].join('');
-  const disclosure = $('#reference-charts');
-  disclosure.removeAttribute('open');
+  $('#reference-charts').setAttribute('open', '');
 }
 
 function chartFeedbackReps(family) {
@@ -1645,7 +1644,8 @@ function renderTimeSeriesCharts() {
     const x = xAt(window[0]);
     const w = Math.max(3, xAt(window[1]) - x);
     const metric = kneeFlagged.has(index + 1) ? 'A2_knee_w_rel_stand' : 'D1_hip_ankle_rel';
-    return `<rect class="series-alert-range series-rep-target" x="${x.toFixed(2)}" y="${topY}" width="${w.toFixed(2)}" height="${fullBottom - topY}" data-rep="${index}" data-metric="${metric}" tabindex="0" role="button"><title>${index + 1}회차 근거 장면 보기</title></rect>`;
+    const attrs = `class="series-alert-range series-rep-target" x="${x.toFixed(2)}" width="${w.toFixed(2)}" data-rep="${index}" data-metric="${metric}" role="button"`;
+    return `<rect ${attrs} y="${topY}" height="${topHeight}" tabindex="0"><title>${index + 1}회차 근거 장면 보기</title></rect><rect ${attrs} y="${lowerY}" height="${lowerHeight}" tabindex="-1"><title>${index + 1}회차 근거 장면 보기</title></rect>`;
   }).join('');
   const hipPoints = bottoms.map((bottom, index) => {
     const value = hips[bottom];
@@ -1666,7 +1666,7 @@ function renderTimeSeriesCharts() {
     const x = left + ratio * plotWidth;
     return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + 44}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
   }).join('');
-  const repGuides = bottoms.map((bottom) => `<line x1="${xAt(bottom).toFixed(2)}" y1="${topY}" x2="${xAt(bottom).toFixed(2)}" y2="${fullBottom}"/>`).join('');
+  const repGuides = bottoms.map((bottom) => `<line x1="${xAt(bottom).toFixed(2)}" y1="${topY}" x2="${xAt(bottom).toFixed(2)}" y2="${topY + topHeight}"/><line x1="${xAt(bottom).toFixed(2)}" y1="${lowerY}" x2="${xAt(bottom).toFixed(2)}" y2="${fullBottom}"/>`).join('');
   const repTicks = bottoms.map((bottom, index) => {
     const x = xAt(bottom).toFixed(2);
     const flagged = anyFlagged.has(index + 1);
@@ -1678,7 +1678,8 @@ function renderTimeSeriesCharts() {
   return `
     <div class="series-chart-wrap">
       <svg class="series-chart" viewBox="0 0 ${width} 460" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
-        <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${fullBottom - topY}"/>
+        <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${topHeight}"/>
+        <rect class="series-standing-band" x="${standingX}" y="${lowerY}" width="${standingWidth}" height="${lowerHeight}"/>
         ${ranges}
         <g class="series-rep-guides" aria-hidden="true">${repGuides}</g>
         <text class="series-title" x="${left}" y="21">골반 높이 흐름</text>
@@ -1687,14 +1688,13 @@ function renderTimeSeriesCharts() {
         <line class="series-axis" x1="${left}" y1="${topY + topHeight}" x2="${width - right}" y2="${topY + topHeight}"/>
         <line class="series-standing-line" x1="${left}" y1="${hipY(100)}" x2="${width - right}" y2="${hipY(100)}"/>
         <text class="series-axis-label" x="${left - 10}" y="${hipY(100) + 4}" text-anchor="end">100%</text>
-        <text class="series-reference-label" x="${width - right - 3}" y="${hipY(100) - 7}" text-anchor="end">준비자세 100%</text>
         <path class="series-hip-line" d="${hipPath}"/>
         ${hipPoints}
         <text class="series-title" x="${left}" y="270">반복마다의 무릎 간격</text>
-        <text class="series-detail" x="${left + 190}" y="270">준비자세 = 1배 · 점은 각 회차의 저점</text>
+        <text class="series-detail" x="${left + 190}" y="270">준비자세 = 1배 · 점선은 세트 중앙값</text>
         <line class="series-axis" x1="${left}" y1="${lowerY}" x2="${left}" y2="${fullBottom}"/>
         <line class="series-axis" x1="${left}" y1="${fullBottom}" x2="${width - right}" y2="${fullBottom}"/>
-        ${finite(kneeMedian) ? `<line class="series-median-line" x1="${left}" y1="${kneeY(kneeMedian)}" x2="${width - right}" y2="${kneeY(kneeMedian)}"/><text class="series-reference-label" x="${width - right - 3}" y="${kneeY(kneeMedian) - 7}" text-anchor="end">세트 중앙값 ${multiple(kneeMedian)}</text>` : ''}
+        ${finite(kneeMedian) ? `<line class="series-median-line" x1="${left}" y1="${kneeY(kneeMedian)}" x2="${width - right}" y2="${kneeY(kneeMedian)}"/><text class="series-axis-label" x="${left - 10}" y="${kneeY(kneeMedian) + 4}" text-anchor="end">${multiple(kneeMedian)}</text>` : ''}
         ${kneePoints}
         <g class="series-time-axis">${timeTicks}</g>
         <g class="series-rep-axis"><text class="series-rep-axis-label" x="${left - 10}" y="${fullBottom + 20}">회차</text>${repTicks}</g>
@@ -2219,7 +2219,7 @@ function renderLowerExercise() {
         <video controls playsinline preload="metadata" src="${escapeHtml(item.video_url)}"${item.thumbnail_url ? ` poster="${escapeHtml(item.thumbnail_url)}"` : ''}></video>
       </div>
       <div class="lower-exercise-body">
-        <span class="lower-exercise-tag">하지 운동 · 참고</span>
+        <span class="lower-exercise-tag">하지 운동</span>
         <h3>${escapeHtml(item.title)}</h3>
         <p class="lower-exercise-meta">${Math.round(item.duration_seconds)}초 · 준비물 ${escapeHtml(item.equipment)}</p>
         <p class="lower-exercise-source">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
@@ -2443,7 +2443,7 @@ function verifyCompareChart(row) {
   const medianLine = (value, cls) => `<line class="${cls}" x1="${left}" x2="${width - right}" y1="${yAt(value).toFixed(1)}" y2="${yAt(value).toFixed(1)}"/>`;
   const ticks = Array.from({ length: count }, (_, index) => `<text x="${xAt(index).toFixed(1)}" y="${top + height + 20}">${index + 1}</text>`).join('');
   const fmt = (value) => (isDepth ? `${value.toFixed(0)}%` : value.toFixed(2));
-  const label = isDepth ? '골반 높이 (준비자세 = 100%)' : '무릎 간격 ÷ 발목 간격 (가장 낮은 자세)';
+  const label = isDepth ? '회차별 골반 높이 (준비자세 = 100%)' : '회차별 무릎 간격 (발목 간격 = 1배)';
   return `
     <figure class="verify-chart ${isDepth ? 'depth' : 'knee'}${narrow ? ' narrow' : ''}">
       <svg viewBox="0 0 ${width} ${top + height + 34}" role="img" aria-label="${escapeHtml(label)}: 직전 세트 중앙값 ${escapeHtml(fmt(prevMedian))}, 이번 세트 중앙값 ${escapeHtml(fmt(currMedian))}">
@@ -2482,7 +2482,7 @@ async function renderVerify() {
     const cautions = row.cautions || [];
     return `
       <article class="verify-result">
-        <div class="verify-result-head"><h3>${escapeHtml(row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
+        <div class="verify-result-head"><h3>${escapeHtml(row.metric === 'D1_hip_ankle_rel' ? '골반 높이' : row.metric === 'A1_knee_ankle_w' ? '무릎 간격' : row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
         <p class="verify-summary">${escapeHtml(neutralView.summary)}</p>
         ${neutralView.values ? `<p class="verify-values">${escapeHtml(neutralView.values)}</p>` : ''}
         ${verifyCompareChart(row)}
@@ -2510,8 +2510,8 @@ async function renderVerify() {
 
 function comparisonValuesText(row) {
   if (!finite(row.prev_median) || !finite(row.new_median)) return '';
-  if (row.metric === 'D1_hip_ankle_rel') return `골반 높이 · 직전 세트 ${percent(row.prev_median)} → 이번 세트 ${percent(row.new_median)}`;
-  if (row.metric === 'A1_knee_ankle_w') return `발목 간격 대비 무릎 간격 · 직전 세트 ${row.prev_median.toFixed(2)}배 → 이번 세트 ${row.new_median.toFixed(2)}배`;
+  if (row.metric === 'D1_hip_ankle_rel') return `직전 세트 ${percent(row.prev_median)} → 이번 세트 ${percent(row.new_median)}`;
+  if (row.metric === 'A1_knee_ankle_w') return `직전 세트 ${row.prev_median.toFixed(2)}배 → 이번 세트 ${row.new_median.toFixed(2)}배`;
   return '';
 }
 

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-i-neutral">
+  <link rel="stylesheet" href="./styles.css?v=20261001-k-footer">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -45,7 +45,7 @@
           <div><strong>8회</strong><span>반복 수</span></div>
           <div><strong>52%</strong><span>보통 골반 높이</span></div>
           <div><strong>1.6배</strong><span>보통 · 6회차 1.3배</span></div>
-          <div><strong>약 2.6초</strong><span>회당 반복 시간 · 참고</span></div>
+          <div><strong>약 2.6초</strong><span>회당 반복 시간</span></div>
         </div>
         <div class="preview-series-card" role="img" aria-label="골반 높이의 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주며 6회차만 강조한 예시 그래프">
           <svg viewBox="0 0 800 268" aria-hidden="true">
@@ -216,8 +216,8 @@
           </div>
           <div class="rep-chart-scroll" id="rep-chart-scroll"><div class="rep-chart-inner" id="rep-chart-inner"></div></div>
           <p class="rep-chart-caption" id="rep-chart-caption" hidden></p>
-          <details class="reference-charts" id="reference-charts">
-            <summary><span class="reference-badge">참고</span><strong>상체 숙임·반복 시간</strong><em>더 보기</em></summary>
+          <details class="reference-charts" id="reference-charts" open>
+            <summary><strong>상체 숙임·반복 시간</strong><em>더 보기</em></summary>
             <div class="reference-chart-scroll"><div class="rep-chart-inner" id="reference-chart-inner"></div></div>
           </details>
         </section>
@@ -287,21 +287,16 @@
   <footer class="site-footer" id="source">
     <div>
       <strong>서비스 콘텐츠 출처</strong>
-      <p>서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보</p>
+      <p>서울올림픽기념국민체육진흥공단 · 국민체력100 동영상 정보</p>
       <p>공공누리 제1유형 · 데이터 스냅샷 2026-09-25</p>
-      <p class="research-source"><b>연구·검증 참고:</b> AI-Hub 피트니스 자세 이미지, OpenCap LabValidation. 원본 데이터는 이 웹서비스에 포함되지 않습니다.</p>
     </div>
     <dl>
       <div><dt>운영주체</dt><dd>이민수(개인)</dd></div>
-      <div><dt>구축일</dt><dd>2026-09-28</dd></div>
-      <div><dt>사용 기술</dt><dd>MediaPipe Pose Landmarker, Pyodide</dd></div>
-      <div><dt>문의</dt><dd>운영주체 이민수</dd></div>
     </dl>
-    <p class="footer-license">외부 구성요소: MediaPipe·Tasks Vision(Apache 2.0), Pyodide(MPL 2.0) · 공단 콘텐츠: 공공누리 제1유형 · <a href="./NOTICE">자세한 라이선스 고지</a></p>
-    <p class="footer-note">정면 영상에 보이는 같은 사람의 반복 변화만 관찰합니다. 변화의 원인이나 의학적 상태를 판단하는 서비스가 아닙니다.</p>
+    <p class="footer-note">정면 영상에 보이는 같은 사람의 반복 변화만 관찰합니다. 변화의 원인이나 의학적 상태를 판단하는 서비스가 아닙니다. · <a href="./NOTICE">오픈소스 라이선스</a></p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-i-neutral"></script>
+  <script type="module" src="./app.js?v=20261001-k-footer"></script>
 </body>
 </html>

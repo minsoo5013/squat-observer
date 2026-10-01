@@ -24,6 +24,6 @@
 - MediaPipe Pose Landmarker 및 Tasks Vision: Apache License 2.0
 - Pyodide: Mozilla Public License 2.0
 - 국민체력100 동영상 정보: 서울올림픽기념국민체육진흥공단, 공공누리 제1유형
-- 연구·검증 참고 데이터: AI-Hub 피트니스 자세 이미지, OpenCap LabValidation. 원본 데이터는 공개 웹서비스에 포함하지 않습니다.
+- 개발 참고 데이터: AI-Hub 피트니스 자세 이미지. 원본 데이터는 공개 웹서비스에 포함하지 않습니다.
 
 외부 구성요소와 공공데이터의 상세 고지는 `NOTICE`에 있습니다.
