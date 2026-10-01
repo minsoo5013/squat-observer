@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>오르내림 · 스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261002-z-brand2">
+  <link rel="stylesheet" href="./styles.css?v=20261002-zb-guide">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -36,9 +36,11 @@
             <li>다리와 배경이 잘 구분되는 곳에서 촬영</li>
           </ul>
         </div>
-        <div class="hero-privacy"><p>영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p><p>처음 분석할 때 분석 도구(약 37MB)를 한 번 내려받습니다. <span class="nowrap">Wi-Fi 환경을 권장합니다.</span></p></div>
+        <div class="hero-privacy"><p>영상과 관절 좌표는 기기 밖으로 전송되지 않습니다.</p><p>처음 분석할 때 분석 도구(약 37MB)를 한 번 내려받습니다. <span class="nowrap">Wi-Fi 환경을 권장합니다.</span></p></div>
       </div>
+      <div class="preview-stage">
       <aside class="result-preview" aria-label="결과 화면 예시">
+        <div class="preview-chrome" aria-hidden="true"><i></i><i></i><i></i><span>oreunaerim.com</span></div>
         <div class="preview-heading"><strong>결과 화면 예시</strong></div>
         <p class="preview-alert">6회차에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다</p>
         <div class="preview-summary" aria-label="예시 결과 요약">
@@ -78,10 +80,11 @@
           <p><span>한 세트 더</span><strong>직전 세트와 비교</strong></p>
         </div>
       </aside>
+      </div>
     </section>
 
     <section class="home-section method-section" id="method">
-      <div class="home-section-heading"><h2>이렇게 진행됩니다</h2><p>촬영부터 다음 세트 비교까지 한 기기 안에서 이어집니다.</p></div>
+      <div class="home-section-heading"><h2>이렇게 진행됩니다</h2><p>촬영부터 다음 세트 비교까지</p></div>
       <ol class="service-flow">
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="13" width="32" height="24" rx="3"/><path d="M18 13l3-4h6l3 4M18 37l-3 5M30 37l3 5"/><circle cx="24" cy="25" r="7"/></svg>
@@ -137,7 +140,7 @@
               <div class="camera-placeholder" id="camera-placeholder">
                 <div class="frame-guide" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
                 <strong id="camera-placeholder-title">혼자 촬영 준비</strong>
-                <small id="camera-placeholder-detail">휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.</small>
+                <small id="camera-placeholder-detail">휴대폰을 허리 높이 정도에 세우고 2~3걸음 물러나 주세요.</small>
               </div>
               <div class="record-badge" id="record-badge" hidden><span></span> <b id="record-time">00:00</b></div>
               <div class="countdown" id="countdown" hidden></div>
@@ -162,20 +165,19 @@
           </div>
           <p class="android-effects-note" id="android-effects-note" hidden>갤럭시에서 배경이 흐리게 보이면 설정 &gt; 유용한 기능 &gt; 영상 효과를 끄고 촬영해 주세요.</p>
           <div class="mobile-upload-note" id="mobile-upload-note" hidden><b>파일로 분석할 때</b><p>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p><p class="upload-note-warn">자르지 않은 영상은 준비자세를 찾지 못해 분석이 보류될 수 있습니다.</p><p>MP4 권장 · 90초 이내 한 세트. 일부 iPhone HEVC 영상은 Chrome·Windows에서 열리지 않을 수 있습니다.</p></div>
-          <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
+          <p class="local-note">영상과 관절 좌표는 기기 밖으로 전송되지 않습니다.</p>
         </article>
 
         <aside class="guide-card">
           <p class="card-label">촬영 방법</p>
-          <h3>처음 2초를<br>준비자세로 기록합니다.</h3>
-          <ol class="instruction-list">
-            <li><span>1</span><div><strong>전신을 화면 안에 두기</strong><small>발끝부터 머리까지 화면에 들어오게 한 뒤, 2초 가만히 서고 시작해 주세요.</small></div></li>
-            <li><span>2</span><div><strong>등 뒤의 밝은 빛 피하기</strong><small>창문이나 밝은 조명을 등지고 서지 마세요. 뒤가 밝으면 다리 관절이 겹쳐 잡힐 수 있어요.</small></div></li>
-            <li><span>3</span><div><strong>평소처럼 한 세트</strong><small>8회 권장 (최소 6회)</small></div></li>
+          <h3 id="guide-title">이 순서로 자동 촬영됩니다</h3>
+          <ol class="instruction-list" id="guide-steps">
+            <li><span>1</span><div><strong>전신이 화면에 들어오게 서기</strong><small>휴대폰을 허리 높이 정도에 세우고 2~3걸음 물러나세요. 화면 안내에 맞춰 머리부터 발끝까지 들어오게 서 주세요.</small></div></li>
+            <li><span>2</span><div><strong>안내에 맞춰 2초 가만히 서기</strong><small>"가만히 서 주세요"가 뜨면 그대로 서 계세요. 3·2·1 뒤 촬영이 시작되고, 처음 2초를 준비자세로 기록합니다.</small></div></li>
+            <li><span>3</span><div><strong>"시작하세요!"가 뜨면 스쿼트</strong><small>평소처럼 한 세트 · 8회 권장 (최소 6회)</small></div></li>
+            <li><span>4</span><div><strong>끝나면 2초 가만히 서기</strong><small>2초 서 있거나 화면 밖으로 나가면 촬영이 자동으로 끝나고 분석을 시작합니다.</small></div></li>
           </ol>
-          <div class="capture-reminders">
-            <p>다리 윤곽이 배경과 구분되는 옷이면 더 정확해요.</p>
-          </div>
+          <div class="capture-caution" role="note"><b>주의</b><p>창문이나 밝은 조명을 등지고 서지 마세요. 뒤가 밝으면 다리 관절이 겹쳐 잡힐 수 있어요. 다리와 배경이 잘 구분되는 환경에서 촬영해 주세요.</p></div>
           <div class="retry-position-note" id="retry-position-note" hidden><b>두 번째 세트 전 확인</b><br><strong>첫 세트와 같은 폰 위치, 같은 발 위치·발 간격으로 서 주세요.</strong><br>발 간격이 달라지면 무릎 간격 값도 달라집니다.</div>
         </aside>
       </div>
@@ -294,6 +296,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261002-z-brand2"></script>
+  <script type="module" src="./app.js?v=20261002-zb-guide"></script>
 </body>
 </html>

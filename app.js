@@ -125,6 +125,45 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
   invalidExitSamples: 2,
 });
 
+// 촬영 방법 카드: 촬영 방식마다 실제 화면 흐름에 맞춘 순서를 보여 준다.
+const GUIDE_STEPS = Object.freeze({
+  solo: {
+    title: '이 순서로 자동 촬영됩니다',
+    steps: [
+      ['전신이 화면에 들어오게 서기', '휴대폰을 허리 높이 정도에 세우고 2~3걸음 물러나세요. 화면 안내에 맞춰 머리부터 발끝까지 들어오게 서 주세요.'],
+      ['안내에 맞춰 2초 가만히 서기', '"가만히 서 주세요"가 뜨면 그대로 서 계세요. 3·2·1 뒤 촬영이 시작되고, 처음 2초를 준비자세로 기록합니다.'],
+      ['"시작하세요!"가 뜨면 스쿼트', '평소처럼 한 세트 · 8회 권장 (최소 6회)'],
+      ['끝나면 2초 가만히 서기', '2초 서 있거나 화면 밖으로 나가면 촬영이 자동으로 끝나고 분석을 시작합니다.'],
+    ],
+  },
+  assisted: {
+    title: '이 순서로 촬영하세요',
+    steps: [
+      ['전신이 화면에 들어오게 맞추기', '촬영자가 정면에서 머리부터 발끝까지 화면에 들어오게 맞춥니다.'],
+      ['촬영 시작 후 2초 가만히 서기', '처음 2초를 준비자세로 기록합니다.'],
+      ['평소처럼 한 세트', '8회 권장 (최소 6회)'],
+      ['끝나면 "촬영 마치기"', '촬영자가 버튼을 누르면 바로 분석을 시작합니다.'],
+    ],
+  },
+  upload: {
+    title: '이런 영상을 올려 주세요',
+    steps: [
+      ['정면에서 전신이 보이는 영상', '머리부터 발끝까지 화면 안에 들어온 영상이어야 합니다.'],
+      ['처음 2초는 가만히 선 장면', '이 2초를 준비자세로 보고 반복을 비교합니다.'],
+      ['한 세트만, 90초 이내', '8회 권장 (최소 6회)'],
+      ['앞뒤 이동 장면은 잘라서', '걸어오고 가는 장면, 휴대폰을 만지는 장면은 잘라 주세요.'],
+    ],
+  },
+});
+
+function renderGuideSteps(mode) {
+  const guide = GUIDE_STEPS[mode] || GUIDE_STEPS.solo;
+  $('#guide-title').textContent = guide.title;
+  $('#guide-steps').innerHTML = guide.steps.map(([title, detail], index) => (
+    `<li><span>${index + 1}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></div></li>`
+  )).join('');
+}
+
 function setHidden(element, hidden) {
   element.hidden = hidden;
 }
@@ -391,6 +430,7 @@ function selectCaptureMode(mode, { preserveStream = false } = {}) {
     upload: '앞뒤로 걸어가거나 휴대폰을 만지는 부분을 잘라낸 기존 영상을 선택합니다.',
   };
   $('#capture-mode-description').textContent = descriptions[mode];
+  renderGuideSteps(mode);
   setHidden(cameraButton, mode === 'upload');
   setHidden(facingControl, mode !== 'assisted');
   setHidden(recordButton, true);
@@ -402,7 +442,7 @@ function selectCaptureMode(mode, { preserveStream = false } = {}) {
   setHidden(cameraPlaceholder, false);
   hideCaptureStatus();
   const placeholder = {
-    solo: ['혼자 촬영 준비', '휴대폰을 허리 높이에 세우고 2~3걸음 물러나 주세요.'],
+    solo: ['혼자 촬영 준비', '휴대폰을 허리 높이 정도에 세우고 2~3걸음 물러나 주세요.'],
     assisted: ['촬영 준비', '카메라 방향을 고르고 촬영자가 시작해 주세요.'],
     upload: ['기존 영상 선택', '앞뒤 이동 장면을 잘라낸 영상을 선택해 주세요.'],
   }[mode];
@@ -1106,7 +1146,7 @@ async function extractLandmarks() {
         : Number.NaN;
       showAnalysis(
         '반복과 관절 움직임을 읽고 있습니다.',
-        '영상은 이 기기 안에서 프레임 단위로 처리됩니다.',
+        '영상은 기기 안에서 프레임 단위로 처리됩니다.',
         15 + ratio * 66,
         processed >= 8 ? formatRemaining(remainingSeconds) : '',
       );

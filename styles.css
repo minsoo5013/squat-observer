@@ -91,7 +91,11 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .button-stop { color: #fff; background: var(--orange); border-color: var(--orange); }
 .button[disabled] { opacity: .45; pointer-events: none; }
 
-.result-preview { min-width: 0; padding: 22px; background: var(--surface); border: 1px solid #cbd2d6; border-radius: 5px; }
+.preview-stage { min-width: 0; padding: 22px; background: linear-gradient(155deg, #e4eef7 0%, #eef3f7 100%); border-radius: 14px; }
+.result-preview { min-width: 0; padding: 22px; background: var(--surface); border: 1px solid #c4ced6; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(24,32,42,.06), 0 16px 36px rgba(24,32,42,.13); }
+.preview-chrome { display: flex; align-items: center; gap: 6px; margin: -22px -22px 18px; padding: 9px 14px; background: #eef1f4; border-bottom: 1px solid #d8dee3; }
+.preview-chrome i { width: 9px; height: 9px; border-radius: 50%; background: #cbd2d8; }
+.preview-chrome span { flex: 0 1 240px; margin-left: 12px; padding: 3px 12px; color: #5f6b73; background: #fff; border: 1px solid #dde2e6; border-radius: 999px; font-size: 11px; font-weight: 650; letter-spacing: .01em; }
 .preview-heading { padding-bottom: 14px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
 .preview-heading strong { color: var(--ink); font-size: 15px; }
 .preview-heading span { color: var(--muted); font-size: 12px; }
@@ -242,10 +246,10 @@ body[data-view="home"] .local-note { display: none; }
 .instruction-list li > span { color: var(--blue); font-size: 12px; font-weight: 700; line-height: 1.6; }
 .instruction-list strong, .instruction-list small { display: block; }
 .instruction-list strong { color: var(--ink); font-size: 16px; line-height: 1.4; }
-.instruction-list small { margin-top: 5px; color: #4f5a63; font-size: 13.5px; line-height: 1.6; }
-.capture-reminders { margin: -9px 0 20px; padding: 0; color: var(--muted); }
-.capture-reminders p { margin: 0; font-size: 12px; font-weight: 700; }
-.capture-reminders p + p { margin-top: 5px; }
+.instruction-list small { margin-top: 5px; color: #4f5a63; font-size: 13.5px; line-height: 1.6; word-break: keep-all; }
+.capture-caution { margin: -9px 0 20px; padding: 13px 15px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; background: #fff8e8; border: 1px solid #ecd9a6; border-radius: 6px; }
+.capture-caution b { padding: 2px 7px; color: #7a5310; background: #fbe9bd; border-radius: 4px; font-size: 12px; font-weight: 800; line-height: 1.5; }
+.capture-caution p { margin: 0; color: #3d454c; font-size: 13.5px; line-height: 1.6; word-break: keep-all; }
 .notice-box { padding: 15px 16px; color: #56616a; background: #f0f2f3; border: 1px solid #e1e5e8; border-radius: 6px; font-size: 12px; }
 .retry-position-note { margin-top: 12px; padding: 15px 16px; color: #5f4a24; background: #fff7e7; border: 1px solid #efdcb6; border-radius: 6px; font-size: 12px; }
 
@@ -537,7 +541,7 @@ body[data-view="home"] .local-note { display: none; }
 
 @media (max-width: 920px) {
   .hero { grid-template-columns: 1fr; gap: 42px; padding-top: 60px; }
-  .result-preview { max-width: 720px; }
+  .preview-stage { max-width: 720px; }
   .service-flow { grid-template-columns: 1fr; }
   .service-flow li, .service-flow li:nth-child(odd), .service-flow li:nth-child(-n+2) { padding: 16px 20px; display: grid; grid-template-columns: 36px 1fr; column-gap: 16px; align-items: center; border-left: 0; border-top: 1px solid var(--line); }
   .service-flow li:first-child { border-top: 0; }
@@ -619,7 +623,9 @@ body[data-view="home"] .local-note { display: none; }
   .header-nav { gap: 12px; }
   .header-nav a { font-size: 12px; }
   .hero-actions .button { width: 100%; }
+  .preview-stage { padding: 12px; border-radius: 12px; }
   .result-preview { padding: 15px; }
+  .preview-chrome { margin: -15px -15px 14px; padding: 8px 12px; }
   .preview-context { margin-inline: -1px; }
   .camera-stage { height: clamp(390px, 70svh, 500px); min-height: 0; }
   .capture-layout, .camera-card, .camera-stage { width: 100%; max-width: 100%; min-width: 0; }

@@ -15,7 +15,13 @@ This web service uses or loads the following third-party components and public d
    - https://pyodide.org/
    - https://www.mozilla.org/MPL/2.0/
 
-3. 국민체력100 동영상 정보
+3. Python packages loaded through Pyodide
+   - NumPy, SciPy, pandas, OpenBLAS: BSD 3-Clause License
+   - python-dateutil: Apache License 2.0 / BSD 3-Clause License (dual)
+   - pytz, six: MIT License
+   - https://numpy.org/ · https://scipy.org/ · https://pandas.pydata.org/
+
+4. 국민체력100 동영상 정보
    - Provider: 서울올림픽기념국민체육진흥공단
    - License: 공공누리 제1유형(출처표시)
    - Source: https://www.data.go.kr/data/15108846/openapi.do
