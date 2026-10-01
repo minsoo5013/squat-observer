@@ -64,7 +64,9 @@ h1, h2, h3, p { text-wrap: pretty; }
 h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7vw, 37px); line-height: 1.3; letter-spacing: -.035em; font-weight: 760; }
 .hero-lede { max-width: 38em; margin: 24px 0 28px; color: #55616a; font-size: 17px; line-height: 1.72; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.hero-privacy { margin: 14px 0 0; color: #5f6b73; font-size: 13px; }
+.hero-privacy { max-width: 31em; margin: 14px 0 0; color: #4f5b63; font-size: 14px; line-height: 1.55; }
+.hero-privacy p { margin: 0; }
+.hero-privacy p + p { margin-top: 2px; }
 .hero-checklist { max-width: 31em; margin: 22px 0 0; padding: 16px 18px 17px; background: var(--blue-pale); border: 1px solid #cddcea; border-radius: 6px; }
 .hero-checklist strong { display: block; margin-bottom: 9px; color: var(--blue-dark); font-size: 15px; font-weight: 780; }
 .hero-checklist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
@@ -213,9 +215,8 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .facing-control { min-height: 48px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); background: #fff; border: 1px solid var(--line-dark); border-radius: 4px; font-size: 11px; font-weight: 700; }
 .facing-control select { min-height: 32px; color: var(--ink); background: #fff; border: 0; font-size: 13px; font-weight: 700; }
 .sound-toggle[aria-pressed="false"] { color: #68737c; background: #eef0f1; }
-.local-note { margin: 12px 2px 2px; color: var(--muted); font-size: 11px; }
-.local-note span { color: var(--green); font-size: 9px; }
-.capture-helper { margin: 8px 2px 2px; color: #5e6971; font-size: 10px; }
+.local-note { margin: 12px 2px 2px; color: #4f5b63; font-size: 13px; line-height: 1.55; }
+body[data-view="home"] .local-note { display: none; }
 .mobile-upload-note { margin: 12px 0 2px; padding: 13px 15px; color: #3c5264; background: var(--blue-pale); border: 1px solid #d6e3ee; border-radius: 6px; font-size: 12.5px; line-height: 1.6; }
 .mobile-upload-note b { display: block; margin-bottom: 4px; color: var(--blue-dark); font-size: 13px; }
 .mobile-upload-note p { margin: 0; }
@@ -360,6 +361,7 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .reference-charts > summary em { display: none; margin-left: auto; color: var(--muted); font-size: 10px; font-style: normal; font-weight: 600; }
 .reference-charts > summary::after { margin-left: 0; }
 .reference-badge { padding: 3px 6px; color: #59636a !important; background: #e7eaec; border-radius: 3px; font-size: 9px !important; font-weight: 760; line-height: 1; }
+.reference-charts .rep-bar-chart-title h4 { display: none; }
 .reference-chart-scroll { max-width: 100%; margin-top: 17px; overflow-x: auto; overscroll-behavior-inline: contain; }
 .rep-bar-chart.reference .rep-bar-fill { background: #b7bec2; border-color: #90999e; }
 .rep-bar-chart.reference .rep-bar-stage { height: 198px; }
@@ -367,15 +369,6 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .rep-bar-chart.reference .rep-bar-space { height: 156px; }
 .rep-bar-chart.reference .rep-bar-button:hover { background: transparent; border-bottom-color: transparent; }
 .rep-bar-chart.reference .rep-chart-median { border-top-color: #899399; }
-.line-reference-svg { width: 100%; height: auto; display: block; margin-top: 6px; }
-.line-reference-axis { stroke: #aeb8be; stroke-width: 1; }
-.line-reference-median { stroke: #899399; stroke-width: 1; stroke-dasharray: 5 5; }
-.line-reference-line { fill: none; stroke: #7d888f; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
-.line-reference-points circle { fill: #fff; stroke: #5f6a71; stroke-width: 2.2; }
-.line-reference-value { fill: #3f4a52; font-size: 12px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
-.line-reference-tick { fill: #647078; font-size: 11px; font-weight: 620; text-anchor: end; }
-.line-reference-x text { fill: #3f4a52; font-size: 12px; font-weight: 700; text-anchor: middle; }
-.line-reference-x text.end { fill: #647078; font-size: 11px; font-weight: 620; text-anchor: end; }
 .rep-bar-chart.reference .rep-bar-value { left: 50%; right: auto; transform: translateX(-50%); padding: 1px 3px; background: rgba(255,255,255,.94); border-radius: 2px; }
 .rep-overview { margin: 0 0 20px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .rep-overview-heading { margin-bottom: 16px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }

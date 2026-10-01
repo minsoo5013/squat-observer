@@ -398,7 +398,6 @@ function selectCaptureMode(mode, { preserveStream = false } = {}) {
   setHidden(soundToggle, mode === 'upload');
   setHidden(fileButton, mode !== 'upload');
   setHidden($('#mobile-upload-note'), mode !== 'upload');
-  setHidden($('#capture-helper'), mode === 'upload');
   setHidden(cameraPlaceholder, false);
   hideCaptureStatus();
   const placeholder = {
@@ -1557,64 +1556,16 @@ function rhythmValues() {
   return state.result.per_rep.map((_, index) => (index === 0 ? null : intervals[index - 1] ?? null));
 }
 
-function rhythmSummary(values) {
-  return values.some(finite)
-    ? '반복 시간은 앞 회차와 이번 회차의 저점 사이 시간입니다.'
-    : '반복 시간을 확인할 수 없습니다.';
-}
-
-// 회차별 값을 선으로 잇는 참고 그래프(반복 시간). 값이 없는 회차에서는 선을 끊는다.
-function renderLineReferenceChart({ title, detail, values, summary, unit }) {
-  const usable = values.map((value, index) => (repUsable(index) && finite(value) ? value : null));
-  const present = usable.filter(finite);
-  if (!present.length) {
-    return `<article class="rep-bar-chart reference line-reference"><div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)}</span></div><p class="rep-bar-summary">${escapeHtml(summary)}</p></article>`;
-  }
-  const middle = median(present);
-  const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches;
-  const width = narrow ? 360 : 640;
-  const left = narrow ? 40 : 52;
-  const right = narrow ? 14 : 20;
-  const top = 26;
-  const height = 120;
-  const count = Math.max(values.length, 1);
-  const pad = Math.max(0.3, (Math.max(...present) - Math.min(...present)) * 0.25);
-  const low = Math.max(0, Math.min(...present) - pad);
-  const high = Math.max(...present) + pad;
-  const plotWidth = width - left - right;
-  const xAt = (index) => left + (count === 1 ? plotWidth / 2 : index / (count - 1) * plotWidth);
-  const yAt = (value) => top + height - (value - low) / (high - low) * height;
-  let d = '';
-  let pen = false;
-  usable.forEach((value, index) => {
-    if (!finite(value)) { pen = false; return; }
-    d += `${pen ? 'L' : 'M'}${xAt(index).toFixed(1)} ${yAt(value).toFixed(1)} `;
-    pen = true;
-  });
-  const points = usable.map((value, index) => (finite(value)
-    ? `<circle cx="${xAt(index).toFixed(1)}" cy="${yAt(value).toFixed(1)}" r="4.5"/><text class="line-reference-value" x="${xAt(index).toFixed(1)}" y="${(yAt(value) - 10).toFixed(1)}">${value.toFixed(1)}</text>`
-    : '')).join('');
-  const ticks = values.map((_, index) => `<text x="${xAt(index).toFixed(1)}" y="${top + height + 22}">${index + 1}</text>`).join('');
-  return `
-    <article class="rep-bar-chart reference line-reference">
-      <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)} · 점선은 중앙값 ${escapeHtml(middle.toFixed(1))}${escapeHtml(unit)}</span></div>
-      <p class="rep-bar-summary">${escapeHtml(summary)}</p>
-      <svg class="line-reference-svg" viewBox="0 0 ${width} ${top + height + 32}" role="img" aria-label="${escapeHtml(title)} 회차별 값">
-        <line class="line-reference-axis" x1="${left}" x2="${width - right}" y1="${top + height}" y2="${top + height}"/>
-        <line class="line-reference-median" x1="${left}" x2="${width - right}" y1="${yAt(middle).toFixed(1)}" y2="${yAt(middle).toFixed(1)}"/>
-        <text class="line-reference-tick" x="${left - 8}" y="${(yAt(middle) + 4).toFixed(1)}">${escapeHtml(middle.toFixed(1))}${escapeHtml(unit)}</text>
-        <path class="line-reference-line" d="${d.trim()}"/>
-        <g class="line-reference-points">${points}</g>
-        <g class="line-reference-x"><text class="end" x="${left - 8}" y="${top + height + 22}">회차</text>${ticks}</g>
-      </svg>
-    </article>`;
-}
-
 function renderReferenceCharts() {
   const trunkValues = state.result.per_rep.map((rep) => (finite(rep.C1_trunk_span_rel) ? 1 - rep.C1_trunk_span_rel : null));
-  const timingValues = rhythmValues();
   const trunk = transformedExtreme(trunkValues, 'max');
   $('#reference-chart-inner').style.minWidth = state.result.per_rep.length > 12 ? `${state.result.per_rep.length * 30}px` : '';
+  if (!trunkValues.some(finite)) {
+    $('#reference-chart-inner').innerHTML = '<p class="rep-bar-summary">어깨가 화면에 보이지 않아 상체 숙임은 확인하지 못했습니다.</p>';
+    $('#reference-charts').setAttribute('open', '');
+    return;
+  }
+  const narrowReference = window.matchMedia('(max-width: 560px)').matches;
   $('#reference-chart-inner').innerHTML = [
     renderBarChart({
       family: 'trunk',
@@ -1626,14 +1577,7 @@ function renderReferenceCharts() {
       valueFormatter: (value) => percent(value),
       medianFormatter: (value) => percent(value),
       reference: true,
-      missingLabel: '어깨 가림',
-    }),
-    renderLineReferenceChart({
-      title: '반복 시간',
-      detail: '앞 회차 저점에서 이번 회차 저점까지(초)',
-      values: timingValues,
-      summary: rhythmSummary(timingValues),
-      unit: '초',
+      missingLabel: narrowReference ? '가림' : '어깨 가림',
     }),
   ].join('');
   $('#reference-charts').setAttribute('open', '');

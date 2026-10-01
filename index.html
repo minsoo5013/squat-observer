@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-q-mobilechart">
+  <link rel="stylesheet" href="./styles.css?v=20261001-s-lastpatch">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -36,7 +36,7 @@
             <li>다리와 배경이 잘 구분되는 곳에서 촬영</li>
           </ul>
         </div>
-        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
+        <div class="hero-privacy"><p>영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p><p>처음 분석할 때 분석 도구(약 37MB)를 한 번 내려받습니다. Wi-Fi 환경을 권장합니다.</p></div>
       </div>
       <aside class="result-preview" aria-label="결과 화면 예시">
         <div class="preview-heading"><strong>결과 화면 예시</strong></div>
@@ -160,9 +160,8 @@
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
-          <div class="mobile-upload-note" id="mobile-upload-note" hidden><b>파일로 분석할 때</b><p>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p><p class="upload-note-warn">자르지 않은 영상은 준비자세를 찾지 못해 분석이 보류될 수 있습니다.</p><p>브라우저에서 재생 가능한 MP4/WebM을 권장합니다. 일부 iPhone HEVC 파일은 Chrome·Windows에서 열리지 않을 수 있습니다. 60fps·가변 프레임 영상도 브라우저가 재생한 화면을 30fps 기준으로 읽습니다. 90초를 넘는 영상은 한 세트만 잘라 다시 올려 주세요.</p></div>
-          <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.<br>처음 분석할 때는 준비에 조금 더 시간이 걸릴 수 있습니다.</p>
-          <p class="capture-helper" id="capture-helper">전신·거리·관절 인식·정지 상태를 확인한 뒤 자동으로 시작합니다.</p>
+          <div class="mobile-upload-note" id="mobile-upload-note" hidden><b>파일로 분석할 때</b><p>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p><p class="upload-note-warn">자르지 않은 영상은 준비자세를 찾지 못해 분석이 보류될 수 있습니다.</p><p>MP4 권장 · 90초 이내 한 세트. 일부 iPhone HEVC 영상은 Chrome·Windows에서 열리지 않을 수 있습니다.</p></div>
+          <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
         </article>
 
         <aside class="guide-card">
@@ -214,7 +213,7 @@
           <div class="rep-chart-scroll" id="rep-chart-scroll"><div class="rep-chart-inner" id="rep-chart-inner"></div></div>
           <p class="rep-chart-caption" id="rep-chart-caption" hidden></p>
           <details class="reference-charts" id="reference-charts" open>
-            <summary><strong>상체 숙임·반복 시간</strong><em>더 보기</em></summary>
+            <summary><strong>상체 숙임</strong><em>더 보기</em></summary>
             <div class="reference-chart-scroll"><div class="rep-chart-inner" id="reference-chart-inner"></div></div>
           </details>
         </section>
@@ -294,6 +293,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-q-mobilechart"></script>
+  <script type="module" src="./app.js?v=20261001-s-lastpatch"></script>
 </body>
 </html>
