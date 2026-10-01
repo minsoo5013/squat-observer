@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-h-mainview">
+  <link rel="stylesheet" href="./styles.css?v=20261001-i-neutral">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -39,7 +39,7 @@
         <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
       </div>
       <aside class="result-preview" aria-label="결과 화면 예시">
-        <div class="preview-heading"><strong>결과 화면 예시</strong><span>실제 값은 분석 후 표시됩니다</span></div>
+        <div class="preview-heading"><strong>결과 화면 예시</strong></div>
         <p class="preview-alert">6회차에서 무릎 간격이 다른 반복보다 눈에 띄게 좁았습니다</p>
         <div class="preview-summary" aria-label="예시 결과 요약">
           <div><strong>8회</strong><span>반복 수</span></div>
@@ -125,7 +125,7 @@
 
       <p class="capture-mode-question" id="capture-mode-question">촬영 방법을 선택하세요</p>
       <div class="capture-modes" role="radiogroup" aria-labelledby="capture-mode-question">
-        <button class="capture-mode active" role="radio" aria-checked="true" data-capture-mode="solo"><strong>혼자 촬영</strong><span>전면 · 자동 시작·종료</span><em>권장</em></button>
+        <button class="capture-mode active" role="radio" aria-checked="true" data-capture-mode="solo"><strong>혼자 촬영 <em>권장</em></strong><span>전면 · 자동 시작·종료</span></button>
         <button class="capture-mode" role="radio" aria-checked="false" data-capture-mode="assisted"><strong>다른 사람이 촬영</strong><span>전면·후면 · 수동 시작·종료</span></button>
         <button class="capture-mode" role="radio" aria-checked="false" data-capture-mode="upload"><strong>기존 영상 업로드</strong><span>이미 찍어 둔 영상 · 걸어오고 가는 장면은 잘라서 올려 주세요</span></button>
       </div>
@@ -163,9 +163,9 @@
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
+          <div class="mobile-upload-note" id="mobile-upload-note" hidden><b>파일로 분석할 때</b><p>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p><p>브라우저에서 재생 가능한 MP4/WebM을 권장합니다. 일부 iPhone HEVC 파일은 Chrome·Windows에서 열리지 않을 수 있습니다. 60fps·가변 프레임 영상도 브라우저가 재생한 화면을 30fps 기준으로 읽습니다. 90초를 넘는 영상은 한 세트만 잘라 다시 올려 주세요.</p></div>
           <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.<br>처음 분석할 때는 준비에 조금 더 시간이 걸릴 수 있습니다.</p>
-          <p class="capture-helper" id="capture-helper">전신·거리·관절 인식·정지 상태를 확인한 뒤에만 자동으로 시작합니다. 촬영 중 횟수는 진행용 추정이며 최종 결과와 다를 수 있습니다.</p>
-          <p class="mobile-upload-note" id="mobile-upload-note" hidden>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p>
+          <p class="capture-helper" id="capture-helper">전신·거리·관절 인식·정지 상태를 확인한 뒤 자동으로 시작합니다.</p>
         </article>
 
         <aside class="guide-card">
@@ -177,9 +177,8 @@
             <li><span>3</span><div><strong>평소처럼 한 세트</strong><small>8회 권장 (최소 6회)</small></div></li>
           </ol>
           <div class="capture-reminders">
-            <p>권장: 다리 윤곽이 배경과 구분되는 옷이면 더 정확해요.</p>
+            <p>다리 윤곽이 배경과 구분되는 옷이면 더 정확해요.</p>
           </div>
-          <div class="notice-box"><b>파일로 분석할 때</b><br>브라우저에서 재생 가능한 MP4/WebM을 권장합니다. 일부 iPhone HEVC 파일은 Chrome·Windows에서 열리지 않을 수 있습니다. 60fps·가변 프레임 영상도 브라우저가 재생한 화면을 30fps 기준으로 읽습니다. 90초를 넘는 영상은 한 세트만 잘라 다시 올려 주세요.</div>
           <div class="retry-position-note" id="retry-position-note" hidden><b>두 번째 세트 전 확인</b><br><strong>첫 세트와 같은 폰 위치, 같은 발 위치·발 간격으로 서 주세요.</strong><br>발 간격이 달라지면 무릎 간격 값도 달라집니다.</div>
         </aside>
       </div>
@@ -216,7 +215,7 @@
             <p>점이나 회차 구간을 누르면 아래 저점 장면과 나란히 비교가 함께 바뀝니다.</p>
           </div>
           <div class="rep-chart-scroll" id="rep-chart-scroll"><div class="rep-chart-inner" id="rep-chart-inner"></div></div>
-          <p class="rep-chart-caption" id="rep-chart-caption"></p>
+          <p class="rep-chart-caption" id="rep-chart-caption" hidden></p>
           <details class="reference-charts" id="reference-charts">
             <summary><span class="reference-badge">참고</span><strong>상체 숙임·반복 시간</strong><em>더 보기</em></summary>
             <div class="reference-chart-scroll"><div class="rep-chart-inner" id="reference-chart-inner"></div></div>
@@ -303,6 +302,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-h-mainview"></script>
+  <script type="module" src="./app.js?v=20261001-i-neutral"></script>
 </body>
 </html>

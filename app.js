@@ -2426,10 +2426,20 @@ function verifyCompareChart(row) {
   const plotWidth = width - left - right;
   const xAt = (index) => left + (count === 1 ? plotWidth / 2 : index / (count - 1) * plotWidth);
   const yAt = (value) => top + height - (Math.max(low, Math.min(high, value)) - low) / (high - low) * height;
-  const offset = count > 1 ? Math.min(7, plotWidth / (count - 1) * .16) : 7;
-  const dots = (values, cls, dx) => values.map((value, index) => (finite(value)
-    ? `<circle class="${cls}" cx="${(xAt(index) + dx).toFixed(1)}" cy="${yAt(value).toFixed(1)}" r="5.5"><title>${index + 1}회차 ${isDepth ? `${value.toFixed(0)}%` : value.toFixed(2)}</title></circle>`
+  const dots = (values, cls) => values.map((value, index) => (finite(value)
+    ? `<circle class="${cls}" cx="${xAt(index).toFixed(1)}" cy="${yAt(value).toFixed(1)}" r="4.5"><title>${index + 1}회차 ${isDepth ? `${value.toFixed(0)}%` : value.toFixed(2)}</title></circle>`
     : '')).join('');
+  // 같은 세트의 회차를 선으로 잇는다. 값이 없는 회차에서는 선을 끊는다.
+  const line = (values, cls) => {
+    let d = '';
+    let pen = false;
+    values.forEach((value, index) => {
+      if (!finite(value)) { pen = false; return; }
+      d += `${pen ? 'L' : 'M'}${xAt(index).toFixed(1)} ${yAt(value).toFixed(1)} `;
+      pen = true;
+    });
+    return d ? `<path class="${cls}" d="${d.trim()}"/>` : '';
+  };
   const medianLine = (value, cls) => `<line class="${cls}" x1="${left}" x2="${width - right}" y1="${yAt(value).toFixed(1)}" y2="${yAt(value).toFixed(1)}"/>`;
   const ticks = Array.from({ length: count }, (_, index) => `<text x="${xAt(index).toFixed(1)}" y="${top + height + 20}">${index + 1}</text>`).join('');
   const fmt = (value) => (isDepth ? `${value.toFixed(0)}%` : value.toFixed(2));
@@ -2443,8 +2453,10 @@ function verifyCompareChart(row) {
         <text class="verify-chart-tick" x="${left - 10}" y="${yAt(low).toFixed(1)}">${escapeHtml(fmt(low))}</text>
         ${medianLine(prevMedian, 'verify-median previous')}
         ${medianLine(currMedian, 'verify-median current')}
-        ${dots(previous, 'verify-dot previous', -offset)}
-        ${dots(current, 'verify-dot current', offset)}
+        ${line(previous, 'verify-line previous')}
+        ${line(current, 'verify-line current')}
+        ${dots(previous, 'verify-dot previous')}
+        ${dots(current, 'verify-dot current')}
         <g class="verify-chart-x">${ticks}<text x="${left - 10}" y="${top + height + 20}" class="end">회차</text></g>
       </svg>
       <figcaption><span class="verify-key-item"><span class="verify-key previous"></span>직전 세트 · 중앙값 ${escapeHtml(fmt(prevMedian))}</span> <span class="verify-key-item"><span class="verify-key current"></span>이번 세트 · 중앙값 ${escapeHtml(fmt(currMedian))}</span></figcaption>
@@ -2459,23 +2471,20 @@ async function renderVerify() {
   }
   setHidden(section, false);
   const rows = state.comparison;
-  const neutralComparison = Boolean(state.retrySession.neutralComparison);
   $('#verify-results').innerHTML = rows.map((row, index) => {
     const previousEvidence = state.retrySession.evidence[row.metric];
     const currentIndex = nearestUsableRep(state.result, previousEvidence?.repIndex ?? 0);
     const hasEvidence = previousEvidence && currentIndex >= 0;
-    const neutralView = neutralComparison ? neutralComparisonCopy(row) : null;
-    const verdictClass = row.verdict === '비교불가'
-      ? 'unavailable'
-      : neutralComparison
-        ? 'neutral'
-        : row.verdict === '악화' ? 'worse' : '';
+    // 엔진 판정(row.verdict)은 표시 문구 선택에만 쓰고, 화면에는 관찰값의 방향만 적는다.
+    const neutralView = neutralComparisonCopy(row);
+    const verdictClass = row.verdict === '비교불가' ? 'unavailable' : 'neutral';
     const reasons = row.reasons || [];
     const cautions = row.cautions || [];
     return `
       <article class="verify-result">
-        <div class="verify-result-head"><h3>${escapeHtml(row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView?.display || row.display)}</span></div>
-        <p class="verify-summary">${escapeHtml(neutralView?.summary || row.summary)}</p>
+        <div class="verify-result-head"><h3>${escapeHtml(row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
+        <p class="verify-summary">${escapeHtml(neutralView.summary)}</p>
+        ${neutralView.values ? `<p class="verify-values">${escapeHtml(neutralView.values)}</p>` : ''}
         ${verifyCompareChart(row)}
         ${hasEvidence ? `<div class="verify-media">
           <div class="verify-shot"><small>직전 세트 · ${previousEvidence.repIndex + 1}회차 저점</small><img src="${previousEvidence.dataUrl}" alt="직전 세트의 저점 근거 장면"><strong>직전 세트 근거</strong></div>
@@ -2499,24 +2508,34 @@ async function renderVerify() {
   }
 }
 
+function comparisonValuesText(row) {
+  if (!finite(row.prev_median) || !finite(row.new_median)) return '';
+  if (row.metric === 'D1_hip_ankle_rel') return `골반 높이 · 직전 세트 ${percent(row.prev_median)} → 이번 세트 ${percent(row.new_median)}`;
+  if (row.metric === 'A1_knee_ankle_w') return `발목 간격 대비 무릎 간격 · 직전 세트 ${row.prev_median.toFixed(2)}배 → 이번 세트 ${row.new_median.toFixed(2)}배`;
+  return '';
+}
+
 function neutralComparisonCopy(row) {
-  if (row.verdict === '비교불가') return { display: '비교 불가', summary: row.summary };
-  if (row.verdict === '유지') return { display: '비슷함', summary: '직전 세트와 비슷합니다.' };
+  const values = comparisonValuesText(row);
+  if (row.verdict === '비교불가') return { display: '비교 불가', summary: '이번 두 세트는 같은 조건으로 비교하기 어렵습니다.', values: '' };
+  if (row.verdict === '유지') return { display: '비슷함', summary: '직전 세트와 비슷합니다.', values };
   if (row.metric === 'A1_knee_ankle_w') {
     const wider = row.delta > 0;
     return {
       display: wider ? '넓어짐' : '좁아짐',
-      summary: `직전 세트보다 무릎 간격이 ${wider ? '넓어졌습니다' : '좁아졌습니다'}.`,
+      summary: `무릎 간격이 직전 세트보다 ${wider ? '넓어졌습니다' : '좁아졌습니다'}.`,
+      values,
     };
   }
   if (row.metric === 'D1_hip_ankle_rel') {
     const deeper = row.delta < 0;
     return {
-      display: deeper ? '더 깊게' : '덜 깊게',
-      summary: `직전 세트보다 ${deeper ? '더 깊게' : '덜'} 앉았습니다.`,
+      display: deeper ? '더 내려감' : '덜 내려감',
+      summary: `직전 세트보다 ${deeper ? '더' : '덜'} 내려갔습니다.`,
+      values,
     };
   }
-  return { display: '변화 방향', summary: '직전 세트와의 변화 방향을 표시합니다.' };
+  return { display: '차이 있음', summary: '직전 세트와 차이가 있습니다.', values };
 }
 
 function renderTechnical() {
