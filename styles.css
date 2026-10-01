@@ -210,6 +210,8 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .camera-diagnostic-links { display: flex; align-items: center; gap: 5px; }
 .camera-diagnostic-links a { padding: 4px 7px; color: var(--blue-dark); background: #fff; border: 1px solid #aebdca; border-radius: 3px; font-weight: 750; text-decoration: none; }
 .camera-diagnostic-links a.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+.camera-diagnostic button { min-height: 36px; margin-top: 9px; padding: 7px 10px; color: #fff; background: var(--blue); border: 0; border-radius: 3px; font-size: 11px; font-weight: 750; }
+.camera-diagnostic button:disabled { color: #68737c; background: #dfe5e9; }
 .camera-diagnostic-note { color: var(--muted); }
 .capture-helper { margin: 8px 2px 2px; color: #5e6971; font-size: 10px; }
 .mobile-upload-note { margin: 10px 2px 2px; padding: 11px 13px; color: #3c5264; background: var(--blue-pale); border-left: 3px solid var(--blue); font-size: 11px; }

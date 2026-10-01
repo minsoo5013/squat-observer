@@ -65,6 +65,7 @@ const state = {
   cameraSettings: null,
   cameraPreviewSettings: null,
   recordedVideoSettings: null,
+  cameraDiagnosticRecording: false,
 };
 
 const video = $('#preview-video');
@@ -190,8 +191,59 @@ function updateCameraDiagnosticPanel() {
     <p><strong>track:</strong> ${escapeHtml(dimensionText(settings))} · facing ${escapeHtml(settings.facingMode || '확인 전')}</p>
     <p><strong>preview:</strong> ${escapeHtml(dimensionText(preview))}</p>
     <p><strong>recording:</strong> ${escapeHtml(dimensionText(recorded))}${recorded.mimeType ? ` · ${escapeHtml(recorded.mimeType)}` : ''}</p>
-    <p class="camera-diagnostic-note">각 후보에서 카메라 연결 화면과 분석 후 ‘분석 기록과 한계’를 캡처해 주세요.</p>
+    <button type="button" id="camera-diagnostic-record" ${state.stream && !state.cameraDiagnosticRecording ? '' : 'disabled'}>${state.cameraDiagnosticRecording ? '진단 녹화 중…' : '3초 진단 녹화'}</button>
+    <p class="camera-diagnostic-note">각 후보에서 카메라 연결 → 3초 진단 녹화 후 이 영역을 캡처해 주세요.</p>
   `;
+  $('#camera-diagnostic-record')?.addEventListener('click', () => { void recordCameraDiagnosticClip(); });
+}
+
+async function recordCameraDiagnosticClip() {
+  if (!CAMERA_DIAGNOSTIC_CANDIDATE || !state.stream || state.cameraDiagnosticRecording) return;
+  const mimeType = chooseRecorderMime();
+  if (!window.MediaRecorder || !mimeType) {
+    alert('이 브라우저에서는 진단 녹화를 시작할 수 없습니다.');
+    return;
+  }
+  state.cameraDiagnosticRecording = true;
+  updateCameraDiagnosticPanel();
+  const chunks = [];
+  const recorder = new MediaRecorder(state.stream, { mimeType });
+  let probeUrl = null;
+  recorder.addEventListener('dataavailable', (event) => {
+    if (event.data?.size) chunks.push(event.data);
+  });
+  try {
+    recorder.start(250);
+    await sleep(3000);
+    const stopped = once(recorder, 'stop', 'error', 10000);
+    recorder.stop();
+    await stopped;
+    const blobType = recorder.mimeType || chunks[0]?.type || mimeType;
+    const blob = new Blob(chunks, { type: blobType });
+    const probe = document.createElement('video');
+    probe.muted = true;
+    probe.playsInline = true;
+    probe.preload = 'metadata';
+    probeUrl = URL.createObjectURL(blob);
+    probe.src = probeUrl;
+    await once(probe, 'loadedmetadata', 'error', 10000);
+    state.recordedVideoSettings = {
+      width: probe.videoWidth,
+      height: probe.videoHeight,
+      aspectRatio: probe.videoHeight ? probe.videoWidth / probe.videoHeight : null,
+      duration: probe.duration,
+      mimeType: blob.type || blobType,
+      sizeBytes: blob.size,
+    };
+    console.info('[camera-diagnostic] probe recording', state.recordedVideoSettings);
+  } catch (error) {
+    console.error('[camera-diagnostic] probe failed', error);
+    alert('진단 녹화 정보를 읽지 못했습니다. 카메라를 다시 연결해 주세요.');
+  } finally {
+    if (probeUrl) URL.revokeObjectURL(probeUrl);
+    state.cameraDiagnosticRecording = false;
+    updateCameraDiagnosticPanel();
+  }
 }
 
 function sleep(ms) {
@@ -2371,6 +2423,7 @@ function restart({ preserveRetry = false } = {}) {
   state.cameraSettings = null;
   state.cameraPreviewSettings = null;
   state.recordedVideoSettings = null;
+  state.cameraDiagnosticRecording = false;
   state.lastGoodCaptureSeconds = 0;
   state.lastStationaryCaptureSeconds = 0;
   state.comparisonMetric = null;
