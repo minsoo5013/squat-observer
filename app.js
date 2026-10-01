@@ -130,8 +130,11 @@ function setHidden(element, hidden) {
 }
 
 function cameraVideoConstraints(facingMode) {
+  // 해상도를 요청하지 않으면 iPhone Safari가 480×640으로 녹화한다. 분석 조건(긴 변 960)보다 높은 720p를 요청한다.
   return {
     facingMode: { ideal: facingMode },
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
     frameRate: { ideal: 30, max: 30 },
   };
 }
@@ -236,9 +239,22 @@ function showAnalysisError(error) {
   document.querySelector('.analysis-retry')?.remove();
   $('#analysis-detail').insertAdjacentHTML(
     'afterend',
-    '<button class="button button-quiet analysis-retry">촬영 화면으로 돌아가기</button>',
+    '<div class="analysis-retry"><button class="button button-quiet" data-retry="back">촬영 화면으로 돌아가기</button><button class="button button-quiet" data-retry="guide">촬영 요건 확인하기</button></div>',
   );
-  $('.analysis-retry').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
+  $('.analysis-retry [data-retry="back"]').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
+  $('.analysis-retry [data-retry="guide"]').addEventListener('click', goToRequirements);
+}
+
+// 분석 보류·오류 뒤 촬영 요건으로 바로 이동한다. 업로드면 '파일로 분석할 때' 안내, 촬영이면 촬영 방법 카드.
+function goToRequirements() {
+  restart({ preserveRetry: Boolean(state.retrySession) });
+  const target = state.captureMode === 'upload' ? $('#mobile-upload-note') : document.querySelector('.guide-card');
+  if (!target) return;
+  setTimeout(() => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('requirements-focus');
+    setTimeout(() => target.classList.remove('requirements-focus'), 2200);
+  }, 350);
 }
 
 function setCaptureStatus(key, main, { action = '', detail = '', metrics = null } = {}) {
@@ -1545,6 +1561,53 @@ function rhythmSummary(values) {
     : '반복 시간을 확인할 수 없습니다.';
 }
 
+// 회차별 값을 선으로 잇는 참고 그래프(반복 시간). 값이 없는 회차에서는 선을 끊는다.
+function renderLineReferenceChart({ title, detail, values, summary, unit }) {
+  const usable = values.map((value, index) => (repUsable(index) && finite(value) ? value : null));
+  const present = usable.filter(finite);
+  if (!present.length) {
+    return `<article class="rep-bar-chart reference line-reference"><div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)}</span></div><p class="rep-bar-summary">${escapeHtml(summary)}</p></article>`;
+  }
+  const middle = median(present);
+  const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches;
+  const width = narrow ? 360 : 640;
+  const left = narrow ? 40 : 52;
+  const right = narrow ? 14 : 20;
+  const top = 26;
+  const height = 120;
+  const count = Math.max(values.length, 1);
+  const pad = Math.max(0.3, (Math.max(...present) - Math.min(...present)) * 0.25);
+  const low = Math.max(0, Math.min(...present) - pad);
+  const high = Math.max(...present) + pad;
+  const plotWidth = width - left - right;
+  const xAt = (index) => left + (count === 1 ? plotWidth / 2 : index / (count - 1) * plotWidth);
+  const yAt = (value) => top + height - (value - low) / (high - low) * height;
+  let d = '';
+  let pen = false;
+  usable.forEach((value, index) => {
+    if (!finite(value)) { pen = false; return; }
+    d += `${pen ? 'L' : 'M'}${xAt(index).toFixed(1)} ${yAt(value).toFixed(1)} `;
+    pen = true;
+  });
+  const points = usable.map((value, index) => (finite(value)
+    ? `<circle cx="${xAt(index).toFixed(1)}" cy="${yAt(value).toFixed(1)}" r="4.5"/><text class="line-reference-value" x="${xAt(index).toFixed(1)}" y="${(yAt(value) - 10).toFixed(1)}">${value.toFixed(1)}</text>`
+    : '')).join('');
+  const ticks = values.map((_, index) => `<text x="${xAt(index).toFixed(1)}" y="${top + height + 22}">${index + 1}</text>`).join('');
+  return `
+    <article class="rep-bar-chart reference line-reference">
+      <div class="rep-bar-chart-title"><h4>${escapeHtml(title)}</h4><span>${escapeHtml(detail)} · 점선은 중앙값 ${escapeHtml(middle.toFixed(1))}${escapeHtml(unit)}</span></div>
+      <p class="rep-bar-summary">${escapeHtml(summary)}</p>
+      <svg class="line-reference-svg" viewBox="0 0 ${width} ${top + height + 32}" role="img" aria-label="${escapeHtml(title)} 회차별 값">
+        <line class="line-reference-axis" x1="${left}" x2="${width - right}" y1="${top + height}" y2="${top + height}"/>
+        <line class="line-reference-median" x1="${left}" x2="${width - right}" y1="${yAt(middle).toFixed(1)}" y2="${yAt(middle).toFixed(1)}"/>
+        <text class="line-reference-tick" x="${left - 8}" y="${(yAt(middle) + 4).toFixed(1)}">${escapeHtml(middle.toFixed(1))}${escapeHtml(unit)}</text>
+        <path class="line-reference-line" d="${d.trim()}"/>
+        <g class="line-reference-points">${points}</g>
+        <g class="line-reference-x"><text class="end" x="${left - 8}" y="${top + height + 22}">회차</text>${ticks}</g>
+      </svg>
+    </article>`;
+}
+
 function renderReferenceCharts() {
   const trunkValues = state.result.per_rep.map((rep) => (finite(rep.C1_trunk_span_rel) ? 1 - rep.C1_trunk_span_rel : null));
   const timingValues = rhythmValues();
@@ -1563,17 +1626,12 @@ function renderReferenceCharts() {
       reference: true,
       missingLabel: '어깨 가림',
     }),
-    renderBarChart({
-      family: 'rhythm',
+    renderLineReferenceChart({
       title: '반복 시간',
-      detail: '앞 회차 저점에서 이번 회차 저점까지',
-      metric: '',
+      detail: '앞 회차 저점에서 이번 회차 저점까지(초)',
       values: timingValues,
       summary: rhythmSummary(timingValues),
-      valueFormatter: (value) => `${value.toFixed(1)}초`,
-      medianFormatter: (value) => `${value.toFixed(1)}초`,
-      reference: true,
-      missingLabel: (index) => (index === 0 ? '첫 회차' : '확인 어려움'),
+      unit: '초',
     }),
   ].join('');
   $('#reference-charts').setAttribute('open', '');
@@ -2700,6 +2758,7 @@ soundToggle.addEventListener('click', async () => {
 });
 $('#restart-button').addEventListener('click', () => restart());
 $('#retake-button').addEventListener('click', () => restart({ preserveRetry: Boolean(state.retrySession) }));
+$('#requirements-button').addEventListener('click', goToRequirements);
 $('#retry-button').addEventListener('click', startRetry);
 $('#sample-button').addEventListener('click', startSampleExperience);
 fileInput.addEventListener('change', async () => {

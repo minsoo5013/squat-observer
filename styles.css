@@ -219,7 +219,12 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .mobile-upload-note { margin: 12px 0 2px; padding: 13px 15px; color: #3c5264; background: var(--blue-pale); border: 1px solid #d6e3ee; border-radius: 6px; font-size: 12.5px; line-height: 1.6; }
 .mobile-upload-note b { display: block; margin-bottom: 4px; color: var(--blue-dark); font-size: 13px; }
 .mobile-upload-note p { margin: 0; }
-.mobile-upload-note p + p { margin-top: 5px; color: #56616a; font-size: 12px; }
+.mobile-upload-note p:first-of-type { color: var(--ink); font-size: 16px; font-weight: 750; line-height: 1.5; }
+.mobile-upload-note p + p { margin-top: 8px; color: #56616a; font-size: 12px; }
+.mobile-upload-note .upload-note-warn { margin-top: 4px; color: #3c4a54; font-size: 14px; font-weight: 600; }
+.unusable-actions, .analysis-retry { display: flex; flex-wrap: wrap; gap: 8px; }
+.analysis-retry { margin-top: 18px; }
+.requirements-focus { outline: 3px solid rgba(35,95,159,.35); outline-offset: 4px; transition: outline-color .3s ease; }
 .record-badge { position: absolute; z-index: 6; top: 10px; left: 10px; padding: 7px 8px; color: #fff; background: rgba(18,24,28,.82); border: 1px solid #485158; border-radius: 4px; font-size: 9px; font-weight: 650; line-height: 1; }
 .record-badge span { width: 7px; height: 7px; margin-right: 6px; display: inline-block; border-radius: 50%; background: var(--orange); animation: pulse 1s infinite; }
 .countdown { position: absolute; z-index: 5; inset: 0; display: grid; place-items: center; color: #fff; background: rgba(12,16,19,.74); font-size: 104px; font-weight: 720; line-height: 1; }
@@ -307,8 +312,8 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .series-point:focus-visible { outline: none; }
 .series-unavailable { padding: 28px; color: #6a4d3d; background: #fff8f3; border: 1px solid #e9c6b1; font-size: 13px; }
 .rep-bar-chart + .rep-bar-chart { margin-top: 25px; padding-top: 21px; border-top: 1px solid var(--line); }
-.rep-bar-chart-title { margin-bottom: 6px; display: flex; align-items: baseline; gap: 9px; }
-.rep-bar-chart-title h4 { margin: 0; color: var(--ink); font-size: 15px; }
+.rep-bar-chart-title { margin-bottom: 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; }
+.rep-bar-chart-title h4 { margin: 0; color: var(--ink); font-size: 15px; white-space: nowrap; }
 .rep-bar-chart-title span { color: var(--muted); font-size: 12px; }
 .rep-bar-summary { min-height: 18px; margin: 0 0 7px; color: #4a5963; font-size: 13px; line-height: 1.5; }
 .chart-help { position: relative; margin-left: auto; color: var(--blue-dark); font-size: 10px; }
@@ -357,6 +362,15 @@ body:not([data-view="home"]) .header-nav { display: none; }
 .rep-bar-chart.reference .rep-bar-space { height: 156px; }
 .rep-bar-chart.reference .rep-bar-button:hover { background: transparent; border-bottom-color: transparent; }
 .rep-bar-chart.reference .rep-chart-median { border-top-color: #899399; }
+.line-reference-svg { width: 100%; height: auto; display: block; margin-top: 6px; }
+.line-reference-axis { stroke: #aeb8be; stroke-width: 1; }
+.line-reference-median { stroke: #899399; stroke-width: 1; stroke-dasharray: 5 5; }
+.line-reference-line { fill: none; stroke: #7d888f; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.line-reference-points circle { fill: #fff; stroke: #5f6a71; stroke-width: 2.2; }
+.line-reference-value { fill: #3f4a52; font-size: 12px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.line-reference-tick { fill: #647078; font-size: 11px; font-weight: 620; text-anchor: end; }
+.line-reference-x text { fill: #3f4a52; font-size: 12px; font-weight: 700; text-anchor: middle; }
+.line-reference-x text.end { fill: #647078; font-size: 11px; font-weight: 620; text-anchor: end; }
 .rep-bar-chart.reference .rep-bar-value { left: 50%; right: auto; transform: translateX(-50%); padding: 1px 3px; background: rgba(255,255,255,.94); border-radius: 2px; }
 .rep-overview { margin: 0 0 20px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
 .rep-overview-heading { margin-bottom: 16px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
