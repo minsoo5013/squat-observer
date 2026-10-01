@@ -264,6 +264,7 @@ function showAnalysis(title, detail, progress = 4, count = '') {
   $('.progress').setAttribute('aria-valuenow', String(Math.round(safeProgress)));
   $('.progress').setAttribute('aria-valuetext', count || `${Math.round(safeProgress)}% 진행`);
   $('#analysis-count').textContent = safeProgress >= 12 && /^(약 |마무리)/.test(count) ? count : '';
+  setHidden($('#analysis-keep'), isError);
   updateStep(2);
   $('#analysis-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }

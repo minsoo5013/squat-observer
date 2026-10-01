@@ -260,6 +260,7 @@ body[data-view="home"] .local-note { display: none; }
 .progress { height: 5px; margin: 29px 0 0; overflow: hidden; background: #424c55; }
 .progress i { width: 4%; height: 100%; display: block; background: #7facd4; transition: width .35s; }
 .analysis-count { font-size: 11px; font-weight: 600; line-height: 1; }
+.analysis-panel .analysis-keep { margin: 14px 0 0; color: #9aa4ab; font-size: 13px; line-height: 1.5; word-break: keep-all; }
 
 .results-heading { padding-bottom: 23px; border-bottom: 1px solid var(--ink); }
 .notice-stack { display: grid; gap: 8px; margin-bottom: 18px; }
