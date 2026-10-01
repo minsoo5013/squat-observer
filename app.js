@@ -398,6 +398,7 @@ function selectCaptureMode(mode, { preserveStream = false } = {}) {
   setHidden(soundToggle, mode === 'upload');
   setHidden(fileButton, mode !== 'upload');
   setHidden($('#mobile-upload-note'), mode !== 'upload');
+  setHidden($('#android-effects-note'), mode === 'upload' || !/Android/i.test(navigator.userAgent));
   setHidden(cameraPlaceholder, false);
   hideCaptureStatus();
   const placeholder = {
@@ -1387,7 +1388,7 @@ function renderSummary() {
   const kneeMedian = median(kneeValues);
   const averageRhythm = mean(timingValues);
   const primary = primaryFeedback();
-  $('#result-title').textContent = `${state.result.n_reps}회의 저점 장면을 나누어 보았습니다.`;
+  $('#result-title').textContent = `${state.result.n_reps}회 반복을 확인했습니다.`;
   $('#result-lead').textContent = primary
     ? feedbackSentence(primary)
     : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
@@ -1421,9 +1422,13 @@ function orderedFeedback() {
   return [...(state.result.feedback || [])].sort((a, b) => Number(Boolean(b.primary)) - Number(Boolean(a.primary)));
 }
 
+// 피드백이 가리킨 지표를 먼저 두고, 무릎 간격·골반 높이 중 빠진 지표는 중립 비교로 덧붙인다.
 function retryTargetsForResult() {
-  const targets = state.result.retry_targets || [];
-  return targets.length ? targets : NEUTRAL_RETRY_TARGETS;
+  const targets = [...(state.result.retry_targets || [])];
+  for (const neutral of NEUTRAL_RETRY_TARGETS) {
+    if (!targets.some((target) => target[0] === neutral[0])) targets.push(neutral);
+  }
+  return targets;
 }
 
 function neutralRetryForResult() {

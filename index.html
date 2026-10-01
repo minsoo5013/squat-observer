@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261002-t-galaxy">
+  <link rel="stylesheet" href="./styles.css?v=20261002-u-retrytop">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -160,6 +160,7 @@
               <input id="video-file" type="file" accept="video/*" aria-describedby="mobile-upload-note" hidden>
             </label>
           </div>
+          <p class="android-effects-note" id="android-effects-note" hidden>갤럭시에서 배경이 흐리게 보이면 설정 &gt; 유용한 기능 &gt; 영상 효과를 끄고 촬영해 주세요.</p>
           <div class="mobile-upload-note" id="mobile-upload-note" hidden><b>파일로 분석할 때</b><p>앞뒤로 걸어가거나 휴대폰을 만지는 부분은 잘라서 올려 주세요.</p><p class="upload-note-warn">자르지 않은 영상은 준비자세를 찾지 못해 분석이 보류될 수 있습니다.</p><p>MP4 권장 · 90초 이내 한 세트. 일부 iPhone HEVC 영상은 Chrome·Windows에서 열리지 않을 수 있습니다.</p></div>
           <p class="local-note">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
         </article>
@@ -193,6 +194,10 @@
         <div><p class="eyebrow">이번 세트 결과</p><h2 id="result-title">반복별 변화를 확인해 보세요.</h2></div>
         <button class="button button-quiet" id="restart-button">다른 영상 분석</button>
       </div>
+      <section class="verify-section" id="verify-section" hidden>
+        <div class="verify-heading"><p class="eyebrow">두 세트 비교</p><h2>직전 세트와 새 세트를 나란히 봅니다.</h2><p>같은 사람의 연속된 두 세트에서 변화 방향만 확인합니다.</p></div>
+        <div id="verify-results"></div>
+      </section>
       <div class="notice-stack" id="result-notices"></div>
       <section class="unusable-result" id="unusable-result" hidden>
         <p class="card-label">분석 보류</p>
@@ -273,10 +278,6 @@
           <div id="technical-content"></div>
         </details>
       </div>
-      <section class="verify-section" id="verify-section" hidden>
-        <div class="verify-heading"><p class="eyebrow">두 세트 비교</p><h2>직전 세트와 새 세트를 나란히 봅니다.</h2><p>같은 사람의 연속된 두 세트에서 변화 방향만 확인합니다.</p></div>
-        <div id="verify-results"></div>
-      </section>
     </section>
   </main>
 
@@ -293,6 +294,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261002-t-galaxy"></script>
+  <script type="module" src="./app.js?v=20261002-u-retrytop"></script>
 </body>
 </html>
