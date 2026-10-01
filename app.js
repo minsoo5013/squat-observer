@@ -63,6 +63,8 @@ const state = {
   readinessCompletedAt: null,
   countdownCancelCount: 0,
   cameraSettings: null,
+  cameraPreviewSettings: null,
+  recordedVideoSettings: null,
 };
 
 const video = $('#preview-video');
@@ -92,6 +94,13 @@ const CONNECTIONS = [
 ];
 
 const MAX_VIDEO_SECONDS = 90;
+
+// iPhone Safari 실기기에서 후보별 카메라 협상값을 확인하기 위한 진단 모드다.
+// cameraDiag 쿼리가 없으면 기존 production 제약을 그대로 사용한다.
+const CAMERA_DIAGNOSTIC_CANDIDATE = (() => {
+  const value = new URLSearchParams(window.location.search).get('cameraDiag');
+  return ['current', 'a', 'b', 'c'].includes(value) ? value : null;
+})();
 
 const NEUTRAL_RETRY_TARGETS = Object.freeze([
   ['A1_knee_ankle_w', 'higher', [['A45_knee_in_mean', 'lower']], 'A2_knee_w_rel_stand'],
@@ -125,6 +134,64 @@ const SOLO_CAPTURE_CONFIG = Object.freeze({
 
 function setHidden(element, hidden) {
   element.hidden = hidden;
+}
+
+function cameraVideoConstraints(facingMode) {
+  const constraints = {
+    facingMode: { ideal: facingMode },
+    frameRate: { ideal: 30, max: 30 },
+  };
+  if (CAMERA_DIAGNOSTIC_CANDIDATE === 'a') return constraints;
+  if (CAMERA_DIAGNOSTIC_CANDIDATE === 'c') {
+    constraints.width = { ideal: 1920 };
+    constraints.height = { ideal: 1080 };
+    return constraints;
+  }
+  constraints.width = { ideal: 1080 };
+  constraints.height = { ideal: 1920 };
+  if (CAMERA_DIAGNOSTIC_CANDIDATE === 'b') constraints.aspectRatio = { ideal: 9 / 16 };
+  return constraints;
+}
+
+function dimensionText(value) {
+  if (!value || !finite(Number(value.width)) || !finite(Number(value.height))) return '확인 전';
+  const ratio = finite(Number(value.aspectRatio))
+    ? Number(value.aspectRatio)
+    : Number(value.width) / Number(value.height);
+  return `${value.width}×${value.height} · 비율 ${ratio.toFixed(3)}`;
+}
+
+function ensureCameraDiagnosticPanel() {
+  if (!CAMERA_DIAGNOSTIC_CANDIDATE) return null;
+  let panel = $('#camera-diagnostic');
+  if (panel) return panel;
+  panel = document.createElement('details');
+  panel.id = 'camera-diagnostic';
+  panel.className = 'camera-diagnostic';
+  panel.open = true;
+  panel.innerHTML = '<summary>iPhone 카메라 방향 진단</summary><div id="camera-diagnostic-content"></div>';
+  $('.camera-card').append(panel);
+  return panel;
+}
+
+function updateCameraDiagnosticPanel() {
+  const panel = ensureCameraDiagnosticPanel();
+  if (!panel) return;
+  const settings = state.cameraSettings || {};
+  const preview = state.cameraPreviewSettings || {};
+  const recorded = state.recordedVideoSettings || {};
+  const links = ['current', 'a', 'b', 'c'].map((candidate) => {
+    const active = candidate === CAMERA_DIAGNOSTIC_CANDIDATE;
+    return `<a class="${active ? 'active' : ''}" href="?cameraDiag=${candidate}">${candidate === 'current' ? '현행' : candidate.toUpperCase()}</a>`;
+  }).join('');
+  $('#camera-diagnostic-content').innerHTML = `
+    <p class="camera-diagnostic-links">후보 ${links}</p>
+    <p><strong>후보:</strong> ${escapeHtml(CAMERA_DIAGNOSTIC_CANDIDATE)}</p>
+    <p><strong>track:</strong> ${escapeHtml(dimensionText(settings))} · facing ${escapeHtml(settings.facingMode || '확인 전')}</p>
+    <p><strong>preview:</strong> ${escapeHtml(dimensionText(preview))}</p>
+    <p><strong>recording:</strong> ${escapeHtml(dimensionText(recorded))}${recorded.mimeType ? ` · ${escapeHtml(recorded.mimeType)}` : ''}</p>
+    <p class="camera-diagnostic-note">각 후보에서 카메라 연결 화면과 분석 후 ‘분석 기록과 한계’를 캡처해 주세요.</p>
+  `;
 }
 
 function sleep(ms) {
@@ -392,14 +459,10 @@ async function enableCamera() {
     state.cameraSettings = null;
     const facingMode = state.captureMode === 'solo' ? 'user' : facingSelect.value;
     state.facingMode = facingMode;
+    const videoConstraints = cameraVideoConstraints(facingMode);
     state.stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: {
-        facingMode: { ideal: facingMode },
-        width: { ideal: 1080 },
-        height: { ideal: 1920 },
-        frameRate: { ideal: 30, max: 30 },
-      },
+      video: videoConstraints,
     });
     video.removeAttribute('src');
     video.srcObject = state.stream;
@@ -408,6 +471,19 @@ async function enableCamera() {
     await video.play();
     state.cameraReadyAt = performance.now();
     state.cameraSettings = state.stream.getVideoTracks()[0]?.getSettings?.() || null;
+    state.cameraPreviewSettings = {
+      width: video.videoWidth,
+      height: video.videoHeight,
+      aspectRatio: video.videoHeight ? video.videoWidth / video.videoHeight : null,
+    };
+    state.recordedVideoSettings = null;
+    console.info('[camera-diagnostic] connected', {
+      candidate: CAMERA_DIAGNOSTIC_CANDIDATE || 'production',
+      requested: videoConstraints,
+      track: state.cameraSettings,
+      preview: state.cameraPreviewSettings,
+    });
+    updateCameraDiagnosticPanel();
     cameraStage.classList.toggle('mirrored', facingMode === 'user');
     setHidden(cameraPlaceholder, true);
     setHidden(recordButton, state.captureMode !== 'assisted');
@@ -888,6 +964,21 @@ async function loadVideoSource(blob) {
   await ready;
   if (!finite(video.duration) || video.duration <= 0 || !video.videoWidth || !video.videoHeight) {
     throw new Error('영상의 길이나 화면 크기를 읽지 못했습니다. 브라우저에서 재생 가능한 MP4/WebM 영상을 사용해 주세요.');
+  }
+  if (state.sourceKind === 'camera' && state.captureRecordMeta) {
+    state.recordedVideoSettings = {
+      width: video.videoWidth,
+      height: video.videoHeight,
+      aspectRatio: video.videoHeight ? video.videoWidth / video.videoHeight : null,
+      duration: video.duration,
+      mimeType: blob.type || state.captureRecordMeta.mimeType || null,
+      sizeBytes: blob.size,
+    };
+    state.captureRecordMeta.previewVideoSettings = state.cameraPreviewSettings;
+    state.captureRecordMeta.recordedVideoSettings = state.recordedVideoSettings;
+    state.captureRecordMeta.cameraDiagnosticCandidate = CAMERA_DIAGNOSTIC_CANDIDATE;
+    console.info('[camera-diagnostic] recording', state.recordedVideoSettings);
+    updateCameraDiagnosticPanel();
   }
   const effectiveDuration = finite(state.analysisEndSeconds)
     ? Math.min(video.duration, state.analysisEndSeconds)
@@ -2197,6 +2288,8 @@ function renderTechnical() {
   const tracking = state.result.qc || {};
   const record = state.captureRecordMeta || {};
   const camera = record.cameraSettings || {};
+  const preview = record.previewVideoSettings || {};
+  const recorded = record.recordedVideoSettings || {};
   const modeLabel = { solo: '혼자 촬영', assisted: '다른 사람이 촬영', upload: '기존 영상 업로드', sample: '샘플' }[record.mode] || '확인 어려움';
   const stopLabel = { standing_complete: '2초 서기 감지', walk_away: '발 이동 감지', left_frame: '화면 이탈 감지', maximum: '최대 촬영 시간', manual: '수동 종료' }[record.stopReason] || '해당 없음';
   $('#technical-content').innerHTML = `
@@ -2205,6 +2298,7 @@ function renderTechnical() {
     <p><strong>준비자세:</strong> ${standingLabel()}</p>
     <p><strong>촬영 방식:</strong> ${modeLabel}${record.mimeType ? ` · ${escapeHtml(record.mimeType)}` : ''}${record.stopReason ? ` · ${stopLabel}` : ''}${finite(record.analysisEndSeconds) ? ` · 분석 종료 ${record.analysisEndSeconds.toFixed(1)}초` : ''}</p>
     ${record.mode === 'solo' ? `<p><strong>자동 촬영 기록:</strong> 권한 요청부터 준비 완료 ${finite(record.readinessSeconds) ? `${record.readinessSeconds.toFixed(1)}초` : '확인 어려움'} · 카운트다운 취소 ${record.countdownCancelCount ?? 0}회 · 카메라 ${camera.width ?? '?'}×${camera.height ?? '?'} ${finite(camera.frameRate) ? `${camera.frameRate.toFixed(0)}fps` : 'fps 확인 어려움'}</p>` : ''}
+    ${record.cameraDiagnosticCandidate ? `<p><strong>카메라 방향 진단:</strong> 후보 ${escapeHtml(record.cameraDiagnosticCandidate)} · track ${escapeHtml(dimensionText(camera))} · facing ${escapeHtml(camera.facingMode || '확인 어려움')} · preview ${escapeHtml(dimensionText(preview))} · 녹화 파일 ${escapeHtml(dimensionText(recorded))}${recorded.mimeType ? ` · ${escapeHtml(recorded.mimeType)}` : ''}</p>` : ''}
     <p><strong>미검출 연결:</strong> ${gap.n_frames_interpolated ?? 0}프레임 · 가장 긴 연속 공백 ${gap.longest_gap_frames ?? 0}프레임</p>
     <p><strong>촬영 기록:</strong> 화면 점유율 ${finite(qc.frame_fill_ratio) ? qc.frame_fill_ratio.toFixed(2) : '확인 어려움'} · 좌우 방향 표기 ${qc.side_labels_usable ? '사용 가능' : '사용하지 않음'}</p>
     <p><strong>추적 기록:</strong> 관절 튐 제외 ${tracking.jump_frames ?? 0}프레임 · 핵심 관절 미검출 비율 ${finite(tracking.core_missing_frac) ? `${Math.round(tracking.core_missing_frac * 100)}%` : '확인 어려움'}</p>
@@ -2275,6 +2369,8 @@ function restart({ preserveRetry = false } = {}) {
   state.readinessCompletedAt = null;
   state.countdownCancelCount = 0;
   state.cameraSettings = null;
+  state.cameraPreviewSettings = null;
+  state.recordedVideoSettings = null;
   state.lastGoodCaptureSeconds = 0;
   state.lastStationaryCaptureSeconds = 0;
   state.comparisonMetric = null;
@@ -2291,6 +2387,7 @@ function restart({ preserveRetry = false } = {}) {
   setHidden($('#results-section'), true);
   setHidden($('#capture-section'), false);
   selectCaptureMode(state.captureMode);
+  updateCameraDiagnosticPanel();
   $('#capture-title').textContent = preserveRetry
     ? '같은 촬영 조건으로 한 세트를 더 진행하세요.'
     : '분석할 스쿼트 영상을 준비해 주세요.';
@@ -2348,4 +2445,5 @@ window.addEventListener('beforeunload', () => {
   resetPoseLandmarker();
 });
 selectCaptureMode('solo');
+updateCameraDiagnosticPanel();
 initSampleExperience().catch(() => {});

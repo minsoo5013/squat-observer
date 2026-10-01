@@ -204,6 +204,13 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .sound-toggle[aria-pressed="false"] { color: #68737c; background: #eef0f1; }
 .local-note { margin: 12px 2px 2px; color: var(--muted); font-size: 11px; }
 .local-note span { color: var(--green); font-size: 9px; }
+.camera-diagnostic { margin: 12px 2px 2px; padding: 11px 13px; color: #40505b; background: #f4f7f9; border: 1px solid #b9c7d1; border-radius: 4px; font-size: 11px; }
+.camera-diagnostic summary { color: var(--blue-dark); cursor: pointer; font-weight: 800; }
+.camera-diagnostic p { margin: 7px 0 0; }
+.camera-diagnostic-links { display: flex; align-items: center; gap: 5px; }
+.camera-diagnostic-links a { padding: 4px 7px; color: var(--blue-dark); background: #fff; border: 1px solid #aebdca; border-radius: 3px; font-weight: 750; text-decoration: none; }
+.camera-diagnostic-links a.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+.camera-diagnostic-note { color: var(--muted); }
 .capture-helper { margin: 8px 2px 2px; color: #5e6971; font-size: 10px; }
 .mobile-upload-note { margin: 10px 2px 2px; padding: 11px 13px; color: #3c5264; background: var(--blue-pale); border-left: 3px solid var(--blue); font-size: 11px; }
 .record-badge { position: absolute; z-index: 6; top: 10px; left: 10px; padding: 7px 8px; color: #fff; background: rgba(18,24,28,.82); border: 1px solid #485158; border-radius: 4px; font-size: 9px; font-weight: 650; line-height: 1; }
