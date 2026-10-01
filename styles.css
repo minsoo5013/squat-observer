@@ -414,7 +414,8 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .lower-exercise-heading h2 { margin: 2px 0 0; color: var(--ink); font-size: 25px; letter-spacing: -.03em; }
 .lower-exercise-icon { width: 34px; height: 34px; display: grid; flex: none; place-items: center; color: var(--teal-dark); background: #e4f2f1; border-radius: 50%; font-size: 18px; font-weight: 760; }
 .lower-exercise-description { margin: 9px 0 17px; color: var(--muted); font-size: 13px; }
-.lower-exercise-card { display: grid; grid-template-columns: minmax(220px, 36%) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 5px; }
+#lower-exercise-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.lower-exercise-card { display: grid; grid-template-rows: auto 1fr; overflow: hidden; border: 1px solid var(--line); border-radius: 5px; }
 .lower-exercise-media { position: relative; min-height: 190px; background: #e5e8ea; }
 .lower-exercise-media video { width: 100%; height: 100%; display: block; object-fit: cover; }
 .lower-exercise-card.media-error .lower-exercise-media::after { content: "브라우저에서 바로 재생하지 못했습니다. 오른쪽 링크로 열어 주세요."; position: absolute; inset: 0; padding: 20px; display: grid; place-items: center; color: #fff; background: #283139; text-align: center; font-size: 11px; }
@@ -422,6 +423,7 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .lower-exercise-tag { display: inline-block; padding: 5px 8px; color: var(--teal-dark); background: #e4f2f1; border-radius: 3px; font-size: 10px; font-weight: 760; }
 .lower-exercise-body h3 { margin: 11px 0 7px; color: var(--ink); font-size: 21px; }
 .lower-exercise-meta { margin: 0; color: var(--muted); font-size: 12px; }
+.lower-exercise-source { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
 .technical-details { margin-top: 14px; padding: 17px 20px; color: var(--muted); font-size: 12px; }
 .technical-details summary { color: var(--ink); font-size: 12px; font-weight: 720; cursor: pointer; }
 .technical-details code { font-family: inherit; }
@@ -431,11 +433,12 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .retry-card p:last-child { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
 .retry-card .button { flex: none; }
 .retry-card .retry-lock-warning { margin: 14px 0 0; padding: 11px 13px; color: #5f4a24; background: #fff7e7; border-left: 3px solid #c88a36; font-size: 12px; }
-.retry-warmup { margin-top: 20px; display: grid; grid-template-columns: minmax(140px, 180px) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 5px; }
+.retry-warmup { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .retry-warmup[hidden] { display: none; }
+.retry-warmup-item { display: grid; grid-template-columns: minmax(130px, 38%) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 5px; }
 .retry-warmup-media { position: relative; min-height: 128px; background: #e5e8ea; }
 .retry-warmup-media video { width: 100%; height: 100%; display: block; object-fit: cover; }
-.retry-warmup.media-error .retry-warmup-media::after { content: "브라우저에서 바로 재생하지 못했습니다. 오른쪽 링크로 열어 주세요."; position: absolute; inset: 0; padding: 18px; display: grid; place-items: center; color: #fff; background: #283139; text-align: center; font-size: 11px; }
+.retry-warmup-item.media-error .retry-warmup-media::after { content: "브라우저에서 바로 재생하지 못했습니다. 오른쪽 링크로 열어 주세요."; position: absolute; inset: 0; padding: 18px; display: grid; place-items: center; color: #fff; background: #283139; text-align: center; font-size: 11px; }
 .retry-warmup-body { padding: 16px 18px; }
 .retry-warmup-body .retry-warmup-label { margin: 0 0 7px; color: var(--blue-dark); font-size: 11px; font-weight: 720; }
 .retry-warmup-body h4 { margin: 0 0 8px; color: var(--ink); font-size: 17px; }
@@ -546,8 +549,10 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
   .verify-media { grid-template-columns: 1fr; }
   .retry-card { grid-template-columns: 1fr; }
   .retry-warmup { grid-template-columns: 1fr; }
+  .retry-warmup-item { grid-template-columns: 1fr; }
   .retry-warmup-media { aspect-ratio: 16 / 8.5; min-height: 0; }
-  .lower-exercise-card { grid-template-columns: 1fr; }
+  #lower-exercise-card { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+  .lower-exercise-card { flex: 0 0 min(84vw, 330px); scroll-snap-align: start; }
   .lower-exercise-media { aspect-ratio: 16 / 8.5; min-height: 0; }
   .analysis-panel { width: calc(100% - 28px); padding: 46px 24px; }
   .site-footer dl { grid-template-columns: 1fr; }

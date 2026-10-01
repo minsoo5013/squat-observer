@@ -2090,16 +2090,16 @@ function renderRecommendations() {
 
 function renderLowerExercise() {
   const section = $('#lower-exercise-section');
-  const group = state.recommendations?.rules?.lower_body_reference;
-  const item = group?.items?.[0];
-  const show = state.result?.result_usable !== false && Boolean(item);
+  const group = state.recommendations?.rules?.lower_body_companion;
+  const items = group?.items || [];
+  const show = state.result?.result_usable !== false && items.length > 0;
   setHidden(section, !show);
   if (!show) {
     $('#lower-exercise-card').replaceChildren();
     return;
   }
   const card = $('#lower-exercise-card');
-  card.innerHTML = `
+  card.innerHTML = items.map((item) => `
     <article class="lower-exercise-card">
       <div class="lower-exercise-media">
         <video controls playsinline preload="metadata" src="${escapeHtml(item.video_url)}"${item.thumbnail_url ? ` poster="${escapeHtml(item.thumbnail_url)}"` : ''}></video>
@@ -2107,12 +2107,15 @@ function renderLowerExercise() {
       <div class="lower-exercise-body">
         <span class="lower-exercise-tag">하지 운동 · 참고</span>
         <h3>${escapeHtml(item.title)}</h3>
-        <p class="lower-exercise-meta">${Math.round(item.duration_seconds)}초</p>
+        <p class="lower-exercise-meta">${Math.round(item.duration_seconds)}초 · 준비물 ${escapeHtml(item.equipment)}</p>
+        <p class="lower-exercise-source">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
         <a class="recommend-link" href="${escapeHtml(item.video_url)}" target="_blank" rel="noopener noreferrer">재생이 안 되면 새 탭에서 보기</a>
       </div>
     </article>
-  `;
-  card.querySelector('video')?.addEventListener('error', () => card.querySelector('.lower-exercise-card')?.classList.add('media-error'));
+  `).join('');
+  card.querySelectorAll('video').forEach((media) => {
+    media.addEventListener('error', () => media.closest('.lower-exercise-card')?.classList.add('media-error'));
+  });
 }
 
 function renderNotices() {
@@ -2236,7 +2239,7 @@ function renderRetry() {
     : '같은 조건으로 한 세트를 더 하면 직전 세트와 무릎 간격·깊이를 비교합니다.';
 
   const warmup = state.recommendations?.rules?.before_next_set;
-  const item = warmup?.items?.[0];
+  const items = warmup?.items || [];
   const container = $('#retry-warmup');
   const displayedMediaUrls = new Set(
     [...document.querySelectorAll('#recommend-grid video, #lower-exercise-card video')]
@@ -2245,15 +2248,24 @@ function renderRetry() {
       })
       .filter(Boolean),
   );
-  let warmupUrl = '';
-  try { warmupUrl = item ? new URL(item.video_url, document.baseURI).href : ''; } catch { warmupUrl = ''; }
-  if (!item || (warmupUrl && displayedMediaUrls.has(warmupUrl))) {
+  const availableItems = items.filter((item) => {
+    try {
+      const url = new URL(item.video_url, document.baseURI).href;
+      if (displayedMediaUrls.has(url)) return false;
+      displayedMediaUrls.add(url);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (!availableItems.length) {
     container.replaceChildren();
     setHidden(container, true);
     return;
   }
   setHidden(container, false);
-  container.innerHTML = `
+  container.innerHTML = availableItems.map((item) => `
+    <article class="retry-warmup-item">
     <div class="retry-warmup-media">
       <video controls playsinline preload="metadata" src="${escapeHtml(item.video_url)}"${item.thumbnail_url ? ` poster="${escapeHtml(item.thumbnail_url)}"` : ''}></video>
     </div>
@@ -2265,8 +2277,11 @@ function renderRetry() {
       <p>출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
       <a class="recommend-link" href="${escapeHtml(item.video_url)}" target="_blank" rel="noopener noreferrer">재생이 안 되면 새 탭에서 보기</a>
     </div>
-  `;
-  container.querySelector('video')?.addEventListener('error', () => container.classList.add('media-error'));
+    </article>
+  `).join('');
+  container.querySelectorAll('video').forEach((media) => {
+    media.addEventListener('error', () => media.closest('.retry-warmup-item')?.classList.add('media-error'));
+  });
 }
 
 async function renderVerify() {

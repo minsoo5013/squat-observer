@@ -12,8 +12,8 @@
     "excluded": "내전근 스트레칭·둔근 활성화(자동 추천 제외 규칙), 짝 운동(00993 누워 발목 당겨주기 — 보조자 동작 포함), 어르신 전용, 점프 동작"
   },
   "rules": {
-    "lower_body_reference": {
-      "label": "참고할 하지 운동",
+    "lower_body_companion": {
+      "label": "함께 해볼 하지 운동",
       "items": [
         {
           "catalog_id": "0AUDLJ08S_00519",
@@ -21,7 +21,31 @@
           "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00519.mp4",
           "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00519/0AUDLJ08S_00519_SC_00003.jpeg",
           "duration_seconds": 69,
-          "description": "국민체력100에서 제공하는 하지 운동 콘텐츠입니다."
+          "equipment": "없음"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00523",
+          "title": "의자에 앉아 다리 뻗어 올리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00523.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00523/0AUDLJ08S_00523_SC_00003.jpeg",
+          "duration_seconds": 70,
+          "equipment": "의자"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00544",
+          "title": "누워서 엉덩이 들어올리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00544.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00544/0AUDLJ08S_00544_SC_00001.jpeg",
+          "duration_seconds": 65,
+          "equipment": "매트"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00664",
+          "title": "밴드 걸고 옆으로 누워 다리 올리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00664.mp4",
+          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00664/0AUDLJ08S_00664_FR_00003.jpeg",
+          "duration_seconds": 127,
+          "equipment": "밴드"
         }
       ]
     },
@@ -104,6 +128,16 @@
           "equipment": "없음",
           "relation": "전신 동적 스트레칭 · 선 자세",
           "reason": "관찰 결과와 상관없이, 다음 세트 전에 선 자세로 가볍게 몸을 푸는 동적 스트레칭 루틴입니다."
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00468",
+          "title": "엉덩관절 회전하기-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00468.mp4",
+          "duration_seconds": 103,
+          "age_group": "공통",
+          "equipment": "없음",
+          "relation": "엉덩관절 움직임 · 선 자세",
+          "reason": "관찰 결과와 상관없이, 다음 세트 전에 엉덩관절을 가볍게 움직여 보는 콘텐츠입니다."
         }
       ]
     },
