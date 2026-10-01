@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-g-compare">
+  <link rel="stylesheet" href="./styles.css?v=20261001-h-mainview">
 </head>
-<body>
+<body data-view="home">
   <header class="site-header">
     <a class="brand" href="#top" aria-label="처음으로">스쿼트 반복 관찰</a>
     <nav class="header-nav" aria-label="주요 안내">
@@ -28,7 +28,15 @@
           <button class="button button-primary mobile-only mobile-upload-action" data-action="go-capture">혼자 촬영 시작하기</button>
           <button class="button button-quiet" id="sample-button" hidden>샘플로 전체 흐름 보기</button>
         </div>
-        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.<br>처음 분석할 때는 준비에 조금 더 시간이 걸릴 수 있습니다.</p>
+        <div class="hero-checklist" role="note" aria-labelledby="hero-checklist-title">
+          <strong id="hero-checklist-title">촬영 전에 이것만 확인하세요</strong>
+          <ul>
+            <li>정면에서 머리부터 발끝까지 보이게</li>
+            <li>등 뒤의 강한 빛은 피하기</li>
+            <li>다리와 배경이 잘 구분되는 곳에서 촬영</li>
+          </ul>
+        </div>
+        <p class="hero-privacy">영상과 관절 좌표는 이 기기 밖으로 전송되지 않습니다.</p>
       </div>
       <aside class="result-preview" aria-label="결과 화면 예시">
         <div class="preview-heading"><strong>결과 화면 예시</strong><span>실제 값은 분석 후 표시됩니다</span></div>
@@ -80,51 +88,25 @@
       <ol class="service-flow">
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="13" width="32" height="24" rx="3"/><path d="M18 13l3-4h6l3 4M18 37l-3 5M30 37l3 5"/><circle cx="24" cy="25" r="7"/></svg>
-          <strong>촬영하거나 올리기</strong><span>준비자세 2초부터 정면 전신 한 세트를 기록합니다.</span>
+          <strong>촬영하거나 올리기</strong>
         </li>
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 11h32v26H8zM13 32l7-8 5 5 5-7 5 10"/><circle cx="16" cy="18" r="3"/></svg>
-          <strong>반복별 저점 장면 찾기</strong><span>반복 구간을 나누고 각 반복의 가장 낮은 장면을 찾습니다.</span>
+          <strong>반복별 저점 장면 찾기</strong>
         </li>
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 9h26v30H11zM17 17h14M17 24h14M17 31h8"/></svg>
-          <strong>한 가지 포인트 보기</strong><span>세트 안에서 먼저 볼 변화를 근거 장면과 함께 보여 줍니다.</span>
+          <strong>한 가지 포인트 보기</strong>
         </li>
         <li class="source-step">
           <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="11" width="32" height="26" rx="3"/><path d="M21 19l9 5-9 5zM14 42h20"/></svg>
-          <strong>관련 스트레칭 보기</strong><span>국민체력100 동영상에서 관련 부위의 콘텐츠를 연결합니다.</span><small>국민체육진흥공단 공공데이터</small>
+          <strong>관련 스트레칭 보기</strong><small>국민체육진흥공단 공공데이터</small>
         </li>
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 15h12v24H9zM27 9h12v30H27zM14 10l-4 5 4 5M34 4l4 5-4 5"/></svg>
-          <strong>한 세트 더 하고 비교하기</strong><span>같은 조건의 새 세트를 직전 세트와 같은 항목으로 비교합니다.</span>
+          <strong>한 세트 더 하고 비교하기</strong>
         </li>
       </ol>
-    </section>
-
-    <section class="home-section metrics-section" id="metrics">
-      <div class="home-section-heading"><h2>이 서비스가 보는 것</h2><p>정면 영상에서 직접 잴 수 있는 값을 준비자세와 비교하고, 같은 세트의 반복끼리 비교합니다.</p></div>
-      <div class="metric-cards">
-        <article>
-          <div class="metric-number" aria-hidden="true">01</div>
-          <div class="metric-example"><span>예시 값</span><strong>1.6배</strong></div>
-          <h3>무릎 간격</h3><p>가장 낮은 자세의 무릎 간격을 준비자세와 비교합니다. 준비자세 = 1배</p>
-        </article>
-        <article>
-          <div class="metric-number" aria-hidden="true">02</div>
-          <div class="metric-example teal"><span>예시 값</span><strong>52%</strong></div>
-          <h3>골반 높이</h3><p>가장 낮은 자세의 골반–발목 세로거리를 준비자세와 비교합니다. 준비자세 = 100%, 낮을수록 깊게 앉음</p>
-        </article>
-        <article>
-          <div class="metric-number" aria-hidden="true">03</div>
-          <div class="metric-example neutral"><span>알림 예시</span><strong>6회차</strong></div>
-          <h3>반복끼리 비교</h3><p>세트 안에서 한 회차가 눈에 띄게 다르거나, 후반 반복이 초반과 달라질 때만 알려 드립니다.</p>
-          <div class="metric-rep-diagram" role="img" aria-label="8개 반복 막대와 세트 중앙값 점선, 한 회차만 강조한 도식">
-            <i class="metric-median"></i>
-            <span style="--h:68%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:70%"></span><span style="--h:73%"></span><span class="accent" style="--h:44%"></span><span style="--h:69%"></span><span style="--h:71%"></span>
-          </div>
-        </article>
-      </div>
-      <p class="metric-footnote">참고로 상체 숙임과 반복 리듬도 함께 보여 드립니다.</p>
     </section>
 
     <section class="workspace" id="capture-section">
@@ -321,6 +303,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-g-compare"></script>
+  <script type="module" src="./app.js?v=20261001-h-mainview"></script>
 </body>
 </html>

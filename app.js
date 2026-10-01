@@ -205,7 +205,12 @@ function updateStep(step) {
   });
 }
 
+function setView(view) {
+  document.body.dataset.view = view;
+}
+
 function showAnalysis(title, detail, progress = 4, count = '') {
+  setView('analysis');
   setHidden($('#capture-section'), true);
   setHidden($('#results-section'), true);
   setHidden($('#analysis-section'), false);
@@ -1301,7 +1306,7 @@ async function analyzeVideo() {
   showAnalysis('반복별 값을 계산하고 있습니다.', '처음 2초의 준비자세를 기준으로 비교합니다.', 90, '마무리 계산 중');
   state.result = await runEngine([0, 2]);
   showAnalysis('결과를 정리하고 있습니다.', '근거 장면과 관련 콘텐츠를 연결합니다.', 98, '곧 완료됩니다');
-  state.recommendations ||= await fetch('./data/recommendations.json').then((response) => response.json());
+  state.recommendations ||= await fetch('./data/recommendations.json?v=20261001-h-mainview').then((response) => response.json());
   state.comparison = state.retrySession
     ? await compareSets(state.retrySession.previous, state.result, state.retrySession.targets)
     : null;
@@ -1647,26 +1652,35 @@ function renderTimeSeriesCharts() {
     if (!finite(value)) return '';
     const flagged = depthFlagged.has(index + 1);
     const active = index === state.selectedRep;
-    return `<g class="series-point series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="D1_hip_ankle_rel" tabindex="0" role="button" aria-label="${index + 1}회차 골반 높이 ${Math.round(value)}%, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${hipY(value).toFixed(2)}" r="7"/><text x="${xAt(bottom).toFixed(2)}" y="${(hipY(value) - 13).toFixed(2)}">${index + 1}</text></g>`;
+    return `<g class="series-point series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="D1_hip_ankle_rel" tabindex="0" role="button" aria-label="${index + 1}회차 골반 높이 ${Math.round(value)}%, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${hipY(value).toFixed(2)}" r="7"/></g>`;
   }).join('');
   const kneePoints = bottoms.map((bottom, index) => {
     const value = knees[index];
     if (!finite(value) || !repUsable(index)) return '';
     const flagged = kneeFlagged.has(index + 1);
     const active = index === state.selectedRep;
-    return `<g class="series-point knee series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="A2_knee_w_rel_stand" tabindex="0" role="button" aria-label="${index + 1}회차 무릎 간격 ${multiple(value)}, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${kneeY(value).toFixed(2)}" r="7"/><text x="${xAt(bottom).toFixed(2)}" y="${(kneeY(value) - 13).toFixed(2)}">${index + 1}</text></g>`;
+    return `<g class="series-point knee series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="A2_knee_w_rel_stand" tabindex="0" role="button" aria-label="${index + 1}회차 무릎 간격 ${multiple(value)}, 근거 장면 보기"><circle cx="${xAt(bottom).toFixed(2)}" cy="${kneeY(value).toFixed(2)}" r="7"/></g>`;
   }).join('');
   const timeTicks = Array.from({ length: 5 }, (_, index) => {
     const ratio = index / 4;
     const x = left + ratio * plotWidth;
-    return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + 20}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
+    return `<line x1="${x}" y1="${fullBottom}" x2="${x}" y2="${fullBottom + 5}"/><text x="${x}" y="${fullBottom + 44}">${(seconds * ratio).toFixed(seconds < 10 ? 1 : 0)}초</text>`;
+  }).join('');
+  const repGuides = bottoms.map((bottom) => `<line x1="${xAt(bottom).toFixed(2)}" y1="${topY}" x2="${xAt(bottom).toFixed(2)}" y2="${fullBottom}"/>`).join('');
+  const repTicks = bottoms.map((bottom, index) => {
+    const x = xAt(bottom).toFixed(2);
+    const flagged = anyFlagged.has(index + 1);
+    const active = index === state.selectedRep;
+    const metric = kneeFlagged.has(index + 1) ? 'A2_knee_w_rel_stand' : depthFlagged.has(index + 1) ? 'D1_hip_ankle_rel' : (state.comparisonMetric || 'A2_knee_w_rel_stand');
+    return `<g class="series-rep-tick series-rep-target ${flagged ? 'flagged' : ''} ${active ? 'active' : ''}" data-rep="${index}" data-metric="${metric}" role="button" tabindex="-1" aria-label="${index + 1}회차 근거 장면 보기"><rect x="${(xAt(bottom) - 13).toFixed(2)}" y="${fullBottom + 4}" width="26" height="22" rx="4"/><text x="${x}" y="${fullBottom + 20}">${index + 1}</text></g>`;
   }).join('');
   const hipPath = svgPath(hips, xAt, hipY);
   return `
     <div class="series-chart-wrap">
-      <svg class="series-chart" viewBox="0 0 ${width} 440" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
+      <svg class="series-chart" viewBox="0 0 ${width} 460" role="img" aria-label="골반 높이의 전체 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주는 그래프">
         <rect class="series-standing-band" x="${standingX}" y="${topY}" width="${standingWidth}" height="${fullBottom - topY}"/>
         ${ranges}
+        <g class="series-rep-guides" aria-hidden="true">${repGuides}</g>
         <text class="series-title" x="${left}" y="21">골반 높이 흐름</text>
         <text class="series-detail" x="${left + 132}" y="21">준비자세 = 100% · 내려갈수록 값이 작아짐</text>
         <line class="series-axis" x1="${left}" y1="${topY}" x2="${left}" y2="${topY + topHeight}"/>
@@ -1683,6 +1697,7 @@ function renderTimeSeriesCharts() {
         ${finite(kneeMedian) ? `<line class="series-median-line" x1="${left}" y1="${kneeY(kneeMedian)}" x2="${width - right}" y2="${kneeY(kneeMedian)}"/><text class="series-reference-label" x="${width - right - 3}" y="${kneeY(kneeMedian) - 7}" text-anchor="end">세트 중앙값 ${multiple(kneeMedian)}</text>` : ''}
         ${kneePoints}
         <g class="series-time-axis">${timeTicks}</g>
+        <g class="series-rep-axis"><text class="series-rep-axis-label" x="${left - 10}" y="${fullBottom + 20}">회차</text>${repTicks}</g>
       </svg>
     </div>`;
 }
@@ -1743,7 +1758,7 @@ function medianBar(value, values, excluded, label, formatter = percent) {
 }
 
 function updateRepSelection() {
-  document.querySelectorAll('.rep-overview-card, .rep-bar-button, .series-point').forEach((card) => {
+  document.querySelectorAll('.rep-overview-card, .rep-bar-button, .series-point, .series-rep-tick').forEach((card) => {
     const active = Number(card.dataset.rep) === state.selectedRep;
     card.classList.toggle('active', active);
     card.setAttribute('aria-current', active ? 'true' : 'false');
@@ -1752,6 +1767,7 @@ function updateRepSelection() {
 
 function observeRepThumbnails() {
   state.repThumbnailObserver?.disconnect();
+  state.thumbCropHeight = sharedCropHeight(state.result?.bottoms || []);
   const canvases = [...document.querySelectorAll('.rep-thumbnail')];
   const load = (canvas) => {
     if (canvas.dataset.queued === 'true') return;
@@ -1952,7 +1968,35 @@ function queueFrameDraw(task) {
   return queued;
 }
 
-async function paintFrame(canvas, frameIndex, maxSide = null, guard = () => true) {
+// 나란히 비교용: 관절 좌표로 사람이 있는 영역(3:4)만 잘라 크게 보여 준다. 좌표가 부족하면 전체 장면을 그대로 쓴다.
+const CROP_LANDMARKS = [0, 11, 12, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+
+function bodyCropRect(landmarks, width, height, minHeight = 0) {
+  if (!Array.isArray(landmarks)) return null;
+  const points = CROP_LANDMARKS.map((index) => landmarks[index])
+    .filter((point) => point && (point.visibility ?? 1) >= 0.5 && finite(point.x) && finite(point.y));
+  if (points.length < 8) return null;
+  const xs = points.map((point) => Math.max(0, Math.min(1, point.x)) * width);
+  const ys = points.map((point) => Math.max(0, Math.min(1, point.y)) * height);
+  const x0 = Math.min(...xs);
+  const x1 = Math.max(...xs);
+  const y0 = Math.min(...ys);
+  const y1 = Math.max(...ys);
+  const pad = Math.max(1, y1 - y0) * 0.14;
+  const ratio = 0.75;
+  let cropHeight = Math.max(y1 - y0 + pad * 2, height * 0.3, minHeight);
+  cropHeight = Math.max(cropHeight, (x1 - x0 + pad * 2) / ratio);
+  let cropWidth = cropHeight * ratio;
+  if (cropHeight > height) { cropHeight = height; cropWidth = Math.min(width, cropHeight * ratio); }
+  if (cropWidth > width) { cropWidth = width; cropHeight = Math.min(height, cropWidth / ratio); }
+  const centerX = (x0 + x1) / 2;
+  const centerY = (y0 + y1) / 2;
+  const sx = Math.min(Math.max(0, centerX - cropWidth / 2), width - cropWidth);
+  const sy = Math.min(Math.max(0, centerY - cropHeight / 2), height - cropHeight);
+  return { sx, sy, sw: cropWidth, sh: cropHeight };
+}
+
+async function paintFrame(canvas, frameIndex, maxSide = null, guard = () => true, crop = false) {
   return queueFrameDraw(async () => {
     await seekVideo(frameIndex / state.analysisFps);
     if (!guard()) return;
@@ -1961,25 +2005,43 @@ async function paintFrame(canvas, frameIndex, maxSide = null, guard = () => true
     const scale = maxSide ? Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight)) : 1;
     const width = Math.max(1, Math.round(sourceWidth * scale));
     const height = Math.max(1, Math.round(sourceHeight * scale));
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, width, height);
     const landmarks = state.frames[frameIndex];
+    const rect = crop ? bodyCropRect(landmarks, width, height, (crop.height || 0) * scale) : null;
+    const target = rect ? document.createElement('canvas') : canvas;
+    target.width = width;
+    target.height = height;
+    const context = target.getContext('2d');
+    context.drawImage(video, 0, 0, width, height);
     drawSkeleton(context, landmarks, width, height);
     drawReferenceGuides(context, landmarks, width, height);
+    if (!rect) return null;
+    const outScale = Math.min(1, 960 / rect.sh);
+    canvas.width = Math.max(1, Math.round(rect.sw * outScale));
+    canvas.height = Math.max(1, Math.round(rect.sh * outScale));
+    canvas.getContext('2d').drawImage(target, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, canvas.width, canvas.height);
+    canvas.classList.add('body-crop');
+    return { ...rect, sh: rect.sh / scale };
   });
+}
+
+// 두 장면을 같은 크기로 잘라야 무릎 간격을 눈으로 비교할 수 있다.
+function sharedCropHeight(frameIndexes, extra = 0) {
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) return extra || 0;
+  const heights = frameIndexes.map((frame) => bodyCropRect(state.frames?.[frame], width, height)?.sh || 0);
+  return Math.max(extra || 0, ...heights);
 }
 
 async function drawThumbnail(canvas, frameIndex) {
   if (canvas.dataset.rendered === 'true') return;
-  await paintFrame(canvas, frameIndex, 360);
+  await paintFrame(canvas, frameIndex, 360, () => true, { height: state.thumbCropHeight || 0 });
   canvas.dataset.rendered = 'true';
 }
 
-async function drawFrame(canvas, frameIndex) {
+async function drawFrame(canvas, frameIndex, { crop = false } = {}) {
   const token = ++state.evidenceToken;
-  await paintFrame(canvas, frameIndex, null, () => token === state.evidenceToken);
+  return paintFrame(canvas, frameIndex, null, () => token === state.evidenceToken, crop);
 }
 
 async function renderEvidence(index) {
@@ -2054,8 +2116,9 @@ async function renderComparison() {
     </div>
     <p class="evidence-caption">${targetIndex + 1}회차 ${meta.label} ${repUsable(targetIndex) ? meta.format(targetValue) : '확인 어려움'} · 평소(${referenceIndex + 1}회차) ${meta.format(referenceValue)}</p>
   `;
-  await drawFrame($('#compare-target'), state.result.bottoms[targetIndex]);
-  await drawFrame($('#compare-reference'), state.result.bottoms[referenceIndex]);
+  const cropHeight = sharedCropHeight([state.result.bottoms[targetIndex], state.result.bottoms[referenceIndex]]);
+  await drawFrame($('#compare-target'), state.result.bottoms[targetIndex], { crop: { height: cropHeight } });
+  await drawFrame($('#compare-reference'), state.result.bottoms[referenceIndex], { crop: { height: cropHeight } });
 }
 
 function mediaKey(url) {
@@ -2259,8 +2322,8 @@ async function startRetry() {
     const repIndex = nearestUsableRep(state.result, preferred);
     if (repIndex < 0) continue;
     const canvas = document.createElement('canvas');
-    await drawFrame(canvas, state.result.bottoms[repIndex]);
-    evidence[metric] = { repIndex, dataUrl: canvas.toDataURL('image/jpeg', 0.88) };
+    const rect = await drawFrame(canvas, state.result.bottoms[repIndex], { crop: true });
+    evidence[metric] = { repIndex, dataUrl: canvas.toDataURL('image/jpeg', 0.88), cropHeight: rect?.sh || 0 };
   }
   state.retrySession = {
     previous: JSON.parse(JSON.stringify(state.result)),
@@ -2429,7 +2492,10 @@ async function renderVerify() {
     if (!canvas) continue;
     const previousEvidence = state.retrySession.evidence[row.metric];
     const currentIndex = nearestUsableRep(state.result, previousEvidence?.repIndex ?? 0);
-    if (currentIndex >= 0) await drawFrame(canvas, state.result.bottoms[currentIndex]);
+    if (currentIndex >= 0) {
+      const frame = state.result.bottoms[currentIndex];
+      await drawFrame(canvas, frame, { crop: { height: sharedCropHeight([frame], previousEvidence?.cropHeight) } });
+    }
   }
 }
 
@@ -2484,6 +2550,8 @@ function renderTechnical() {
 }
 
 async function renderResults() {
+  setView('result');
+  if (history.state?.view !== 'result') history.pushState({ view: 'result' }, '');
   setHidden($('#analysis-section'), true);
   setHidden($('#capture-section'), true);
   setHidden($('#results-section'), false);
@@ -2568,10 +2636,23 @@ function restart({ preserveRetry = false } = {}) {
     ? '첫 세트와 같은 폰 위치, 같은 발 위치·발 간격을 유지하고 준비자세 2초부터 시작합니다.'
     : '모바일은 영상을 선택하거나 카메라로 바로 촬영하고, 데스크톱은 촬영하거나 파일을 선택할 수 있습니다.';
   setHidden($('#retry-position-note'), !preserveRetry);
+  setView(preserveRetry ? 'retry' : 'home');
   updateStep(1);
   $('#capture-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+window.addEventListener('popstate', () => {
+  const view = document.body.dataset.view;
+  if (view === 'result' || view === 'retry') restart();
+});
+document.querySelector('.brand')?.addEventListener('click', (event) => {
+  const view = document.body.dataset.view;
+  if (!view || view === 'home') return;
+  event.preventDefault();
+  if (view === 'analysis') return;
+  restart();
+  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'auto' }));
+});
 document.querySelectorAll('[data-action="go-capture"]').forEach((button) => {
   button.addEventListener('click', () => {
     selectCaptureMode('solo');

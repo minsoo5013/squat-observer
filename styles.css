@@ -65,6 +65,15 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .hero-lede { max-width: 38em; margin: 24px 0 28px; color: #55616a; font-size: 17px; line-height: 1.72; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .hero-privacy { margin: 14px 0 0; color: #5f6b73; font-size: 13px; }
+.hero-checklist { max-width: 31em; margin: 22px 0 0; padding: 16px 18px 17px; background: var(--blue-pale); border: 1px solid #cddcea; border-left: 3px solid var(--blue); border-radius: 4px; }
+.hero-checklist strong { display: block; margin-bottom: 9px; color: var(--blue-dark); font-size: 15px; font-weight: 780; }
+.hero-checklist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.hero-checklist li { position: relative; padding-left: 27px; color: var(--ink); font-size: 15px; font-weight: 620; line-height: 1.5; }
+.hero-checklist li::before { content: ""; position: absolute; left: 0; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--blue); }
+.hero-checklist li::after { content: ""; position: absolute; left: 6.5px; top: 5.5px; width: 4px; height: 8px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); }
+body:not([data-view="home"]) .hero,
+body:not([data-view="home"]) .home-section,
+body:not([data-view="home"]) .header-nav { display: none; }
 .mobile-only { display: none; }
 
 .button { min-height: 48px; padding: 11px 18px; border: 1px solid transparent; border-radius: 4px; background: transparent; font-size: 15px; font-weight: 720; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
@@ -283,10 +292,17 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .series-point { color: var(--teal); cursor: pointer; }
 .series-point.knee { color: var(--blue); }
 .series-point circle { fill: #fff; stroke: currentColor; stroke-width: 3; transition: r .15s ease, stroke-width .15s ease; }
-.series-point text { fill: #55626a; font-size: 11px; font-weight: 760; text-anchor: middle; }
+.series-rep-guides line { stroke: #dfe4e7; stroke-width: 1; stroke-dasharray: 2 4; }
+.series-rep-axis-label { fill: #647078; font-size: 11px; font-weight: 620; text-anchor: end; }
+.series-rep-tick { cursor: pointer; }
+.series-rep-tick rect { fill: transparent; }
+.series-rep-tick text { fill: #3f4a52; font-size: 13px; font-weight: 760; text-anchor: middle; }
+.series-rep-tick.flagged rect { fill: #fdeee6; }
+.series-rep-tick.flagged text { fill: #b24a2c; }
+.series-rep-tick.active rect { fill: none; stroke: #8a959c; stroke-width: 1.2; }
+.series-rep-tick:hover rect { fill: #eef1f3; }
 .series-point.flagged { color: var(--orange); }
 .series-point.flagged circle { fill: #fff8f3; stroke-width: 4; }
-.series-point.flagged text { fill: #994224; }
 .series-point.active circle, .series-point:hover circle, .series-point:focus-visible circle { r: 10px; stroke-width: 4; }
 .series-point:focus-visible { outline: none; }
 .series-unavailable { padding: 28px; color: #6a4d3d; background: #fff8f3; border: 1px solid #e9c6b1; font-size: 13px; }
@@ -410,6 +426,7 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .compare-item small { font-size: 11px; }
 .compare-item strong { color: var(--ink); font-size: 13px; }
 .compare-shot canvas { width: 100%; max-height: 330px; margin: 10px 0; object-fit: contain; background: #101316; border-radius: 3px; }
+.compare-shot canvas.body-crop { max-height: 440px; background: transparent; }
 
 .recommend-section { margin-top: 46px; padding: 30px; border-top: 3px solid var(--ink); }
 .section-heading.compact { margin-bottom: 12px; }
@@ -478,6 +495,7 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .verify-shot small, .verify-shot strong { display: block; }
 .verify-shot small { margin-bottom: 8px; color: var(--muted); font-size: 10px; }
 .verify-shot img, .verify-shot canvas { width: 100%; max-height: 340px; display: block; object-fit: contain; background: #101316; border-radius: 3px; }
+.verify-shot img, .verify-shot canvas.body-crop { max-height: 440px; background: transparent; }
 .verify-shot strong { margin-top: 8px; color: var(--ink); font-size: 12px; }
 .verify-caution { margin: 13px 0 0; padding: 11px 13px; color: #6d552b; background: #fff8e9; font-size: 11px; }
 .verify-caution b { color: inherit; }
