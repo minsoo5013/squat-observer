@@ -44,8 +44,8 @@ main { overflow: hidden; }
   gap: 24px;
   border-bottom: 1px solid var(--line);
 }
-.brand { display: inline-flex; align-items: baseline; gap: 9px; color: var(--ink); font-size: 20px; font-weight: 800; letter-spacing: -.03em; text-decoration: none; }
-.brand-sub { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
+.brand { display: inline-flex; align-items: baseline; gap: 8px; margin-bottom: 8px; color: var(--ink); font-size: 25px; font-weight: 800; line-height: 1; letter-spacing: -.035em; text-decoration: none; }
+.brand-sub { color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1; letter-spacing: -.01em; }
 .header-nav { display: flex; align-items: center; gap: 28px; }
 .header-nav a { min-height: 44px; display: inline-flex; align-items: center; color: #4d5962; font-size: 14px; font-weight: 650; text-decoration: none; }
 .header-nav a:hover { color: var(--blue-dark); text-decoration: underline; text-underline-offset: 4px; }
@@ -614,8 +614,8 @@ body[data-view="home"] .local-note { display: none; }
 }
 
 @media (max-width: 460px) {
-  .brand { font-size: 18px; }
-  .brand-sub { font-size: 12px; }
+  .brand { font-size: 22px; margin-bottom: 6px; }
+  .brand-sub { font-size: 11px; }
   .header-nav { gap: 12px; }
   .header-nav a { font-size: 12px; }
   .hero-actions .button { width: 100%; }
