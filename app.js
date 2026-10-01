@@ -1388,15 +1388,15 @@ function renderSummary() {
   const kneeMedian = median(kneeValues);
   const averageRhythm = mean(timingValues);
   const primary = primaryFeedback();
-  $('#result-title').textContent = `${state.result.n_reps}회 반복을 확인했습니다.`;
+  $('#result-title').textContent = '이번 세트의 움직임을 회차별로 살펴봤어요.';
   $('#result-lead').textContent = primary
     ? feedbackSentence(primary)
     : `눈에 띄게 다른 회차 없이 ${state.result.n_reps}회를 마쳤습니다`;
   $('#result-summary').innerHTML = `
-    <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수 · 값에 사용 ${usableCount}회</small></div>
-    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? `보통 골반 높이 ${percent(pelvisHeightMedian)}` : '확인 어려움'}</strong><small>준비자세 높이를 100%로 비교</small></div>
-    <div class="summary-chip"><strong>${finite(kneeMedian) && kneeNarrow.index >= 0 ? `보통 ${multiple(kneeMedian)} · 가장 좁았던 ${repNumbersText(kneeNarrow.reps)} ${multiple(kneeNarrow.value)}` : '확인 어려움'}</strong><small>무릎 간격 · 준비자세 대비</small></div>
-    <div class="summary-chip"><strong>${finite(averageRhythm) ? `회당 약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>반복 리듬</small></div>
+    <div class="summary-chip"><strong>${state.result.n_reps}회</strong><small>반복 수${usableCount < state.result.n_reps ? ` · 값에 사용 ${usableCount}회` : ''}</small></div>
+    <div class="summary-chip"><strong>${finite(pelvisHeightMedian) ? percent(pelvisHeightMedian) : '확인 어려움'}</strong><small>보통 골반 높이 · 준비자세 = 100%</small></div>
+    <div class="summary-chip"><strong>${finite(kneeMedian) ? multiple(kneeMedian) : '확인 어려움'}</strong><small>보통 무릎 간격 · 준비자세 = 1배</small></div>
+    <div class="summary-chip"><strong>${finite(averageRhythm) ? `약 ${averageRhythm.toFixed(1)}초` : '확인 어려움'}</strong><small>회당 반복 시간</small></div>
   `;
   const extremeSentence = deep.index >= 0 && shallow.index >= 0 && kneeWide.index >= 0 && kneeNarrow.index >= 0
     ? `가장 많이 내려간 회차는 ${repNumbersText(deep.reps)}, 가장 덜 내려간 회차는 ${repNumbersText(shallow.reps)}입니다. 무릎 간격은 ${repNumbersText(kneeWide.reps)}가 가장 넓고 ${repNumbersText(kneeNarrow.reps)}가 가장 좁았습니다.`
@@ -2132,7 +2132,6 @@ async function renderComparison() {
       <div class="compare-item compare-shot selected"><small>선택 · ${targetIndex + 1}회차 저점</small><canvas id="compare-target"></canvas><strong>${meta.label} ${repUsable(targetIndex) ? meta.format(targetValue) : '확인 어려움'}</strong></div>
       <div class="compare-item compare-shot"><small>평소 · ${referenceIndex + 1}회차 저점</small><canvas id="compare-reference"></canvas><strong>${meta.label} ${meta.format(referenceValue)}</strong></div>
     </div>
-    <p class="evidence-caption">${targetIndex + 1}회차 ${meta.label} ${repUsable(targetIndex) ? meta.format(targetValue) : '확인 어려움'} · 평소(${referenceIndex + 1}회차) ${meta.format(referenceValue)}</p>
   `;
   const cropHeight = sharedCropHeight([state.result.bottoms[targetIndex], state.result.bottoms[referenceIndex]]);
   await drawFrame($('#compare-target'), state.result.bottoms[targetIndex], { crop: { height: cropHeight } });
@@ -2504,7 +2503,6 @@ async function renderVerify() {
       <article class="verify-result">
         <div class="verify-result-head"><h3>${escapeHtml(row.metric === 'D1_hip_ankle_rel' ? '골반 높이' : row.metric === 'A1_knee_ankle_w' ? '무릎 간격' : row.label)}</h3><span class="verify-verdict ${verdictClass}">${escapeHtml(neutralView.display)}</span></div>
         <p class="verify-summary">${escapeHtml(neutralView.summary)}</p>
-        ${neutralView.values ? `<p class="verify-values">${escapeHtml(neutralView.values)}</p>` : ''}
         ${verifyCompareChart(row)}
         ${hasEvidence ? `<div class="verify-media">
           <div class="verify-shot"><small>직전 세트 · ${previousEvidence.repIndex + 1}회차 저점</small><img src="${previousEvidence.dataUrl}" alt="직전 세트의 저점 근거 장면"><strong>직전 세트 근거</strong></div>
