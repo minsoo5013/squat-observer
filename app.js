@@ -2058,25 +2058,55 @@ async function renderComparison() {
   await drawFrame($('#compare-reference'), state.result.bottoms[referenceIndex]);
 }
 
+function mediaKey(url) {
+  const match = String(url || '').match(/0AUDLJ08S_\d{5}/);
+  return match ? match[0] : String(url || '');
+}
+
+function moreContentList(items, seen, label = '더 보기') {
+  const rows = (items || []).filter((item) => {
+    const key = mediaKey(item.video_url);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (!rows.length) return '';
+  return `
+    <details class="content-more">
+      <summary>${escapeHtml(label)} <span>${rows.length}편</span></summary>
+      <ul>
+        ${rows.map((item) => `
+          <li>
+            <span class="content-more-title">${escapeHtml(item.title)}</span>
+            <span class="content-more-meta">${Math.round(item.duration_seconds)}초 · 준비물 ${escapeHtml(item.equipment)}</span>
+            <a href="${escapeHtml(item.video_url)}" target="_blank" rel="noopener noreferrer">영상 보기</a>
+          </li>`).join('')}
+      </ul>
+      <p class="content-more-source">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
+    </details>`;
+}
+
 function renderRecommendations() {
   const section = $('#recommend-section');
   const primary = primaryFeedback();
   const steady = !primary;
   const selections = primary ? [primary] : [{ content_group: 'steady_set', text: '' }];
-  $('#recommend-eyebrow').textContent = steady ? '선택형 루틴' : '다음 세트 전 선택사항';
+  $('#recommend-eyebrow').textContent = steady ? '운동 후 선택사항' : '다음 세트 전 선택사항';
   $('#recommend-title').textContent = '관련 부위 스트레칭 콘텐츠';
   $('#recommend-disclaimer').textContent = steady
-    ? '다음 세트 전 또는 운동을 마친 뒤 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.'
+    ? '운동을 마친 뒤 하체를 천천히 정리해 볼 수 있는 국민체력100 콘텐츠입니다.'
     : '관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.';
   const cards = [];
-  const seen = new Set();
+  const seen = state.shownMedia = new Set();
+  const moreItems = [];
   for (const selection of selections) {
     if (selection.content_group === 'before_next_set') continue;
     const group = state.recommendations.rules[selection.content_group];
     if (!group) continue;
+    moreItems.push(...(group.more || []));
     for (const item of group.items) {
-      if (seen.has(item.catalog_id)) continue;
-      seen.add(item.catalog_id);
+      if (seen.has(mediaKey(item.video_url))) continue;
+      seen.add(mediaKey(item.video_url));
       const reason = item.reason || (selection.text ? `${selection.text} → ${item.relation}` : item.relation);
       cards.push(`
         <article class="recommend-card">
@@ -2095,6 +2125,8 @@ function renderRecommendations() {
   }
   setHidden(section, cards.length === 0);
   $('#recommend-grid').innerHTML = cards.join('');
+  const recommendMore = $('#recommend-more');
+  if (recommendMore) recommendMore.innerHTML = moreContentList(moreItems, seen);
   section.querySelectorAll('video').forEach((media) => {
     media.addEventListener('error', () => media.closest('.recommend-card')?.classList.add('media-error'));
   });
@@ -2111,7 +2143,14 @@ function renderLowerExercise() {
     return;
   }
   const card = $('#lower-exercise-card');
-  card.innerHTML = items.map((item) => `
+  const seen = state.shownMedia || (state.shownMedia = new Set());
+  const visible = items.filter((item) => {
+    const key = mediaKey(item.video_url);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  card.innerHTML = visible.map((item) => `
     <article class="lower-exercise-card">
       <div class="lower-exercise-media">
         <video controls playsinline preload="metadata" src="${escapeHtml(item.video_url)}"${item.thumbnail_url ? ` poster="${escapeHtml(item.thumbnail_url)}"` : ''}></video>
@@ -2128,6 +2167,8 @@ function renderLowerExercise() {
   card.querySelectorAll('video').forEach((media) => {
     media.addEventListener('error', () => media.closest('.lower-exercise-card')?.classList.add('media-error'));
   });
+  const lowerMore = $('#lower-exercise-more');
+  if (lowerMore) lowerMore.innerHTML = moreContentList(group?.more, seen);
 }
 
 function renderNotices() {
@@ -2253,24 +2294,15 @@ function renderRetry() {
   const warmup = state.recommendations?.rules?.before_next_set;
   const items = warmup?.items || [];
   const container = $('#retry-warmup');
-  const displayedMediaUrls = new Set(
-    [...document.querySelectorAll('#recommend-grid video, #lower-exercise-card video')]
-      .map((media) => {
-        try { return new URL(media.currentSrc || media.src, document.baseURI).href; } catch { return ''; }
-      })
-      .filter(Boolean),
-  );
+  const seen = state.shownMedia || (state.shownMedia = new Set());
   const availableItems = items.filter((item) => {
-    try {
-      const url = new URL(item.video_url, document.baseURI).href;
-      if (displayedMediaUrls.has(url)) return false;
-      displayedMediaUrls.add(url);
-      return true;
-    } catch {
-      return false;
-    }
+    const key = mediaKey(item.video_url);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-  if (!availableItems.length) {
+  const warmupMore = moreContentList(warmup?.more, seen, '다음 세트 전 몸 풀기 더 보기');
+  if (!availableItems.length && !warmupMore) {
     container.replaceChildren();
     setHidden(container, true);
     return;
@@ -2290,7 +2322,7 @@ function renderRetry() {
       <a class="recommend-link" href="${escapeHtml(item.video_url)}" target="_blank" rel="noopener noreferrer">재생이 안 되면 새 탭에서 보기</a>
     </div>
     </article>
-  `).join('');
+  `).join('') + warmupMore;
   container.querySelectorAll('video').forEach((media) => {
     media.addEventListener('error', () => media.closest('.retry-warmup-item')?.classList.add('media-error'));
   });

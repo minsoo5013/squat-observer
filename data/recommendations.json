@@ -1,5 +1,5 @@
 {
-  "status": "selected_2026-09-28_frame_review",
+  "status": "selected_2026-10-01_frame_review_50",
   "source": {
     "provider": "서울올림픽기념국민체육진흥공단",
     "data_name": "국민체력100 동영상 정보",
@@ -9,7 +9,8 @@
   "selection_basis": {
     "method": "국민체력100 메타데이터(부위·체력요인·대상·도구)로 후보를 좁힌 뒤 영상 프레임을 직접 확인해 스쿼트 관찰 항목별로 선정",
     "evidence_note": "연관 근거일 뿐 원인·효과 근거가 아니다. 무릎 간격: 발목 배측굴곡과 무릎 안쪽 이동의 연관(Bell 2008, Macrum 2012). 깊이: 발목 배측굴곡·고관절 굴곡 가동범위와 스쿼트 깊이의 연관(Kim 2015).",
-    "excluded": "내전근 스트레칭·둔근 활성화(자동 추천 제외 규칙), 짝 운동(00993 누워 발목 당겨주기 — 보조자 동작 포함), 어르신 전용, 점프 동작"
+    "excluded": "내전근 스트레칭·둔근 활성화(자동 추천 제외 규칙), 짝 운동(00993 누워 발목 당겨주기 — 보조자 동작 포함), 어르신 전용, 점프 동작",
+    "pool_note": "하체와 관련되고 혼자 수행할 수 있는 공단 콘텐츠를 선별한 뒤 영상을 직접 검수해 50편 선정. 결과 화면에는 영역별 일부를 먼저 보여 주고 나머지는 더 보기로 제공."
   },
   "rules": {
     "lower_body_companion": {
@@ -47,6 +48,128 @@
           "duration_seconds": 127,
           "equipment": "밴드"
         }
+      ],
+      "more": [
+        {
+          "catalog_id": "0AUDLJ08S_00520",
+          "title": "의자 앞에서 앉았다 일어서기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00520.mp4",
+          "duration_seconds": 62,
+          "equipment": "의자",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00524",
+          "title": "앉아서 엉덩관절 굽히기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00524.mp4",
+          "duration_seconds": 68,
+          "equipment": "의자",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00525",
+          "title": "서서 다리 뒤로차기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00525.mp4",
+          "duration_seconds": 61,
+          "equipment": "의자 · 테이블",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00526",
+          "title": "서서 다리로 탄력밴드 당기기Ⅰ",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00526.mp4",
+          "duration_seconds": 71,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00527",
+          "title": "서서 다리로 턴력밴드 당기기Ⅱ",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00527.mp4",
+          "duration_seconds": 76,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00528",
+          "title": "서서 뒤꿈치 들기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00528.mp4",
+          "duration_seconds": 57,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00529",
+          "title": "한발 서서 균형잡기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00529.mp4",
+          "duration_seconds": 59,
+          "equipment": "의자",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00661",
+          "title": "밴드 걸고 누워 다리 들어올리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00661.mp4",
+          "duration_seconds": 145,
+          "equipment": "공 · 밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00660",
+          "title": "밴드 걸고 엎드려 다리 구부리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00660.mp4",
+          "duration_seconds": 139,
+          "equipment": "공",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00666",
+          "title": "밴드잡고 누워서 다리 밀기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00666.mp4",
+          "duration_seconds": 139,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00667",
+          "title": "엎드려 뒤로 다리 올리기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00667.mp4",
+          "duration_seconds": 129,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00662",
+          "title": "봉 잡고 앉았다 일어서기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00662.mp4",
+          "duration_seconds": 127,
+          "equipment": "봉",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00530",
+          "title": "방등 굽힘/발바닥 굽힘",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00530.mp4",
+          "duration_seconds": 83,
+          "equipment": "수건",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00663",
+          "title": "밴드 걸고 앉아 발등 굽힘",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00663.mp4",
+          "duration_seconds": 120,
+          "equipment": "밴드",
+          "relation": "하지 운동"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00805",
+          "title": "의자 이용 근력운동 루팀 프로그램",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00805.mp4",
+          "duration_seconds": 84,
+          "equipment": "의자",
+          "relation": "하지 운동"
+        }
       ]
     },
     "knee_width_decrease": {
@@ -73,6 +196,32 @@
           "equipment": "수건",
           "relation": "발목·종아리 · 앉은 자세",
           "reason": "같은 발목(종아리) 부위를 앉아서 수건으로 천천히 늘려 보는 콘텐츠입니다."
+        }
+      ],
+      "more": [
+        {
+          "catalog_id": "0AUDLJ08S_00624",
+          "title": "수동적 관절가동범위 운동",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00624.mp4",
+          "duration_seconds": 61,
+          "equipment": "의자",
+          "relation": "발목·종아리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00734",
+          "title": "비복근 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00734.mp4",
+          "duration_seconds": 101,
+          "equipment": "의자",
+          "relation": "발목·종아리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00722",
+          "title": "종아리 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00722.mp4",
+          "duration_seconds": 116,
+          "equipment": "매트",
+          "relation": "발목·종아리"
         }
       ]
     },
@@ -112,6 +261,112 @@
           "relation": "하체 루틴 · 누운 자세",
           "reason": "무릎을 가슴 쪽으로 당기는 동작 등 고관절을 굽히는 스트레칭이 들어 있는 하체 루틴입니다."
         }
+      ],
+      "more": [
+        {
+          "catalog_id": "0AUDLJ08S_00716",
+          "title": "고관절 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00716.mp4",
+          "duration_seconds": 120,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00731",
+          "title": "엉덩이 스트레칭-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00731.mp4",
+          "duration_seconds": 103,
+          "equipment": "의자",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00691",
+          "title": "엉덩이 스트레칭1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00691.mp4",
+          "duration_seconds": 106,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00719",
+          "title": "엉덩이 스트레칭1-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00719.mp4",
+          "duration_seconds": 107,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00692",
+          "title": "엉덩이 스트레칭2",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00692.mp4",
+          "duration_seconds": 149,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00721",
+          "title": "엉덩이 스트레칭2-2",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00721.mp4",
+          "duration_seconds": 124,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00589",
+          "title": "넙다리 뒤쪽 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00589.mp4",
+          "duration_seconds": 77,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00717",
+          "title": "대퇴이두근 스트레칭1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00717.mp4",
+          "duration_seconds": 132,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00718",
+          "title": "대퇴이두근 스트레칭2",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00718.mp4",
+          "duration_seconds": 98,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00713",
+          "title": "등 대고 대퇴이두근 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00713.mp4",
+          "duration_seconds": 128,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00730",
+          "title": "내전근 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00730.mp4",
+          "duration_seconds": 102,
+          "equipment": "의자",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00591",
+          "title": "넙다리 안쪽 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00591.mp4",
+          "duration_seconds": 92,
+          "equipment": "매트",
+          "relation": "발목·고관절"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00694",
+          "title": "넙다리 안쪽 스트레칭-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00694.mp4",
+          "duration_seconds": 116,
+          "equipment": "없음",
+          "relation": "발목·고관절"
+        }
       ]
     },
     "before_next_set": {
@@ -139,23 +394,22 @@
           "relation": "엉덩관절 움직임 · 선 자세",
           "reason": "관찰 결과와 상관없이, 다음 세트 전에 엉덩관절을 가볍게 움직여 보는 콘텐츠입니다."
         }
+      ],
+      "more": [
+        {
+          "catalog_id": "0AUDLJ08S_00597",
+          "title": "좌식생활자를 위한 동적 루틴 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00597.mp4",
+          "duration_seconds": 85,
+          "equipment": "매트",
+          "relation": "다음 세트 전"
+        }
       ]
     },
     "steady_set": {
-      "label": "다음 세트 전·운동 후 루틴",
+      "label": "운동 후 루틴",
       "optional": true,
       "items": [
-        {
-          "catalog_id": "8b0a7071f186660e",
-          "title": "유산소 운동 전 동적 루틴 스트레칭",
-          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00596.mp4",
-          "thumbnail_url": "https://openapi.kspo.or.kr/web/image/0AUDLJ08S_00596/0AUDLJ08S_00596_SC_00003.jpeg",
-          "duration_seconds": 143,
-          "age_group": "공통",
-          "equipment": "없음",
-          "relation": "다음 세트 전",
-          "reason": "다음 세트 전에 전신을 가볍게 움직여 볼 수 있는 동적 루틴입니다."
-        },
         {
           "catalog_id": "ce0c2322458c3f2c",
           "title": "하지 루틴 스트레칭2",
@@ -166,6 +420,73 @@
           "equipment": "매트",
           "relation": "운동을 마친 뒤",
           "reason": "스쿼트를 마친 뒤 하체를 천천히 정리해 볼 수 있는 루틴입니다."
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00592",
+          "title": "하지 루틴 스트레칭1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00592.mp4",
+          "duration_seconds": 102,
+          "equipment": "없음",
+          "relation": "운동을 마친 뒤",
+          "reason": "하체 여러 부위를 차례로 늘려 보는 정리 루틴입니다."
+        }
+      ],
+      "more": [
+        {
+          "catalog_id": "0AUDLJ08S_00590",
+          "title": "넙다리 앞쪽 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00590.mp4",
+          "duration_seconds": 81,
+          "equipment": "없음",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00720",
+          "title": "대퇴사두근 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00720.mp4",
+          "duration_seconds": 102,
+          "equipment": "매트",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00732",
+          "title": "대퇴사두근 스트레칭-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00732.mp4",
+          "duration_seconds": 109,
+          "equipment": "없음",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00693",
+          "title": "넙다리 앞쪽 스트레칭-1",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00693.mp4",
+          "duration_seconds": 115,
+          "equipment": "매트",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00733",
+          "title": "발가락 폄근 스트레칭",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00733.mp4",
+          "duration_seconds": 108,
+          "equipment": "의자",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00729",
+          "title": "몸 앞으로 굽히기",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00729.mp4",
+          "duration_seconds": 116,
+          "equipment": "의자",
+          "relation": "운동 후 정리"
+        },
+        {
+          "catalog_id": "0AUDLJ08S_00803",
+          "title": "의자 이용 유연성 운동 루틴 프로그램",
+          "video_url": "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00803.mp4",
+          "duration_seconds": 107,
+          "equipment": "없음",
+          "relation": "운동 후 정리"
         }
       ]
     }

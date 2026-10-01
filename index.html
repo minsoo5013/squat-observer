@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261001-f-series">
+  <link rel="stylesheet" href="./styles.css?v=20261001-d-content">
 </head>
 <body>
   <header class="site-header">
@@ -106,38 +106,22 @@
       <div class="metric-cards">
         <article>
           <div class="metric-number" aria-hidden="true">01</div>
-          <div class="metric-pose-diagram knee-gap-diagram" role="img" aria-label="준비자세와 가장 낮은 자세의 무릎 간격을 파란 선으로 비교하는 도식">
-            <svg viewBox="0 0 310 116" aria-hidden="true">
-              <g class="pose-lines"><circle cx="64" cy="18" r="10"/><path d="M64 28V61M41 41H87M64 61L48 99M64 61L80 99M48 99H39M80 99H89"/><circle cx="48" cy="76" r="3"/><circle cx="80" cy="76" r="3"/></g>
-              <g class="pose-lines"><circle cx="229" cy="22" r="10"/><path d="M229 32L229 60M206 43H252M229 60L193 79L181 101M229 60L265 79L277 101M181 101H171M277 101H287"/><circle cx="193" cy="79" r="3"/><circle cx="265" cy="79" r="3"/></g>
-              <g class="knee-measure"><path d="M48 76H80M48 71V81M80 71V81"/><path d="M193 79H265M193 74V84M265 74V84"/></g>
-              <g class="pose-label"><text x="64" y="114">준비자세</text><text x="229" y="114">가장 낮은 자세</text></g>
-            </svg>
-          </div>
           <div class="metric-example"><span>예시 값</span><strong>1.6배</strong></div>
           <h3>무릎 간격</h3><p>가장 낮은 자세의 무릎 간격을 준비자세와 비교합니다. 준비자세 = 1배</p>
         </article>
         <article>
           <div class="metric-number" aria-hidden="true">02</div>
-          <div class="metric-pose-diagram hip-height-diagram" role="img" aria-label="준비자세와 가장 낮은 자세의 골반에서 발목까지 세로거리를 청록 선으로 비교하는 도식">
-            <svg viewBox="0 0 310 116" aria-hidden="true">
-              <g class="pose-lines"><circle cx="64" cy="18" r="10"/><path d="M64 28V61M41 41H87M64 61L48 99M64 61L80 99M48 99H39M80 99H89"/><circle cx="48" cy="99" r="3"/></g>
-              <g class="pose-lines"><circle cx="229" cy="22" r="10"/><path d="M229 32L229 60M206 43H252M229 60L193 79L181 101M229 60L265 79L277 101M181 101H171M277 101H287"/><circle cx="181" cy="101" r="3"/></g>
-              <g class="hip-measure"><path d="M37 61V99M32 61H42M32 99H42"/><path d="M170 60V101M165 60H175M165 101H175"/></g>
-              <g class="pose-label"><text x="64" y="114">준비자세</text><text x="229" y="114">가장 낮은 자세</text></g>
-            </svg>
-          </div>
           <div class="metric-example teal"><span>예시 값</span><strong>52%</strong></div>
           <h3>골반 높이</h3><p>가장 낮은 자세의 골반–발목 세로거리를 준비자세와 비교합니다. 준비자세 = 100%, 낮을수록 깊게 앉음</p>
         </article>
         <article>
           <div class="metric-number" aria-hidden="true">03</div>
+          <div class="metric-example neutral"><span>알림 예시</span><strong>6회차</strong></div>
+          <h3>반복끼리 비교</h3><p>세트 안에서 한 회차가 눈에 띄게 다르거나, 후반 반복이 초반과 달라질 때만 알려 드립니다.</p>
           <div class="metric-rep-diagram" role="img" aria-label="8개 반복 막대와 세트 중앙값 점선, 한 회차만 강조한 도식">
             <i class="metric-median"></i>
             <span style="--h:68%"></span><span style="--h:72%"></span><span style="--h:66%"></span><span style="--h:70%"></span><span style="--h:73%"></span><span class="accent" style="--h:44%"></span><span style="--h:69%"></span><span style="--h:71%"></span>
           </div>
-          <div class="metric-example neutral"><span>알림 예시</span><strong>6회차</strong></div>
-          <h3>반복끼리 비교</h3><p>세트 안에서 한 회차가 눈에 띄게 다르거나, 후반 반복이 초반과 달라질 때만 알려 드립니다.</p>
         </article>
       </div>
       <p class="metric-footnote">참고로 상체 숙임과 반복 리듬도 함께 보여 드립니다.</p>
@@ -285,6 +269,7 @@
           <div class="section-heading compact"><div><p class="eyebrow" id="recommend-eyebrow">다음 세트 전 선택사항</p><h2 id="recommend-title">관련 부위 스트레칭 콘텐츠</h2></div></div>
           <p class="recommend-disclaimer" id="recommend-disclaimer">관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.</p>
           <div class="recommend-grid" id="recommend-grid"></div>
+          <div id="recommend-more"></div>
           <p class="attribution">출처: 서울올림픽기념국민체육진흥공단, 국민체력100 동영상 정보(공공누리 제1유형)</p>
         </section>
         <section class="lower-exercise-section" id="lower-exercise-section" hidden>
@@ -294,6 +279,7 @@
           </div>
           <p class="lower-exercise-description">스쿼트와 함께 할 수 있는 국민체력100 하지 운동입니다.</p>
           <div id="lower-exercise-card"></div>
+          <div id="lower-exercise-more"></div>
         </section>
         <section class="retry-card" id="retry-section" hidden>
           <div class="retry-copy">
@@ -335,6 +321,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261001-f-series"></script>
+  <script type="module" src="./app.js?v=20261001-d-content"></script>
 </body>
 </html>
