@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#18202a">
   <meta name="description" content="스마트폰 정면 영상으로 스쿼트 반복별 변화를 관찰하고 관련 스트레칭 콘텐츠를 확인합니다.">
   <title>오르내림 · 스쿼트 반복 관찰</title>
-  <link rel="stylesheet" href="./styles.css?v=20261002-zb-guide">
+  <link rel="stylesheet" href="./styles.css?v=20261002-ze-kneewords">
 </head>
 <body data-view="home">
   <header class="site-header">
@@ -46,7 +46,7 @@
         <div class="preview-summary" aria-label="예시 결과 요약">
           <div><strong>8회</strong><span>반복 수</span></div>
           <div><strong>52%</strong><span>보통 깊이</span></div>
-          <div><strong>1.6배</strong><span>보통 무릎 간격</span></div>
+          <div><strong>6회차</strong><span>무릎 간격이 눈에 띄게 좁았던 회차</span></div>
           <div><strong>약 2.6초</strong><span>회당 반복 시간</span></div>
         </div>
         <div class="preview-series-card" role="img" aria-label="깊이(골반 높이)의 시간 흐름과 각 회차 저점의 무릎 간격을 함께 보여 주며 6회차만 강조한 예시 그래프">
@@ -65,7 +65,7 @@
             <line class="preview-series-axis" x1="48" y1="180" x2="48" y2="236"/>
             <line class="preview-series-axis" x1="48" y1="236" x2="780" y2="236"/>
             <line class="preview-series-reference" x1="48" y1="197" x2="780" y2="197"/>
-            <text class="preview-series-note" x="777" y="182" text-anchor="end">세트 중앙값 1.6배</text>
+            <text class="preview-series-note" x="777" y="182" text-anchor="end">보통 간격</text>
             <g class="preview-series-points knee">
               <circle cx="121" cy="197" r="5"/><circle cx="205" cy="194" r="5"/><circle cx="289" cy="198" r="5"/><circle cx="373" cy="196" r="5"/>
               <circle cx="457" cy="193" r="5"/><circle class="flagged" cx="541" cy="222" r="6"/><circle cx="625" cy="197" r="5"/><circle cx="709" cy="194" r="5"/>
@@ -197,7 +197,7 @@
         <button class="button button-quiet" id="restart-button">다른 영상 분석</button>
       </div>
       <section class="verify-section" id="verify-section" hidden>
-        <div class="verify-heading"><p class="eyebrow">두 세트 비교</p><h2>직전 세트와 새 세트를 나란히 봅니다.</h2><p>같은 사람의 연속된 두 세트에서 변화 방향만 확인합니다.</p></div>
+        <div class="verify-heading"><p class="eyebrow">두 세트 비교</p><h2>직전 세트와 이번 세트를 나란히 봅니다.</h2><p>같은 사람의 연속된 두 세트에서 변화 방향만 확인합니다.</p></div>
         <div id="verify-results"></div>
       </section>
       <div class="notice-stack" id="result-notices"></div>
@@ -227,7 +227,7 @@
         <section class="rep-overview" aria-labelledby="rep-overview-title">
           <div class="rep-overview-heading">
             <div><p class="card-label">반복 전체 보기</p><h3 id="rep-overview-title">반복별 저점 한눈에</h3></div>
-            <p>막대의 세로선은 이 세트의 중앙값입니다.</p>
+            <p>막대의 세로선은 이 세트의 보통 값입니다.</p>
           </div>
           <div class="rep-grid" id="rep-grid" role="list" aria-label="반복별 저점 장면"></div>
         </section>
@@ -296,6 +296,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
-  <script type="module" src="./app.js?v=20261002-zb-guide"></script>
+  <script type="module" src="./app.js?v=20261002-ze-kneewords"></script>
 </body>
 </html>
