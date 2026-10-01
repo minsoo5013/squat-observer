@@ -2050,9 +2050,7 @@ function renderRecommendations() {
   const steady = !primary;
   const selections = primary ? [primary] : [{ content_group: 'steady_set', text: '' }];
   $('#recommend-eyebrow').textContent = steady ? '선택형 루틴' : '다음 세트 전 선택사항';
-  $('#recommend-title').textContent = steady
-    ? '다음 세트 전·운동 후 루틴 (국민체력100)'
-    : '관련 부위를 가볍게 준비해 보세요.';
+  $('#recommend-title').textContent = '관련 부위 스트레칭 콘텐츠';
   $('#recommend-disclaimer').textContent = steady
     ? '다음 세트 전 또는 운동을 마친 뒤 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.'
     : '관찰된 변화와 관련된 부위를 가볍게 움직여 볼 수 있는 국민체력100 콘텐츠입니다.';

@@ -115,6 +115,7 @@ h1 { max-width: 12.5em; margin: 0; color: var(--ink); font-size: clamp(30px, 2.7
 .preview-point strong, .preview-content strong, .preview-content span { display: block; }
 .preview-point strong, .preview-content strong { margin-top: 8px; color: var(--ink); font-size: 13px; line-height: 1.55; }
 .preview-content span { margin-top: 7px; color: var(--muted); font-size: 11px; }
+.preview-content .preview-source-tag { width: fit-content; padding: 4px 7px; color: var(--blue-dark); background: var(--blue-pale); border-radius: 3px; font-size: 10px; font-weight: 760; }
 
 .home-section { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 82px 0; border-top: 1px solid var(--line); }
 .home-section-heading { max-width: 700px; margin-bottom: 32px; }
