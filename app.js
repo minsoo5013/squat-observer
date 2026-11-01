@@ -131,8 +131,8 @@ const GUIDE_STEPS = Object.freeze({
     title: '이 순서로 자동 촬영됩니다',
     steps: [
       ['전신이 화면에 들어오게 서기', '휴대폰을 허리 높이 정도에 세우고 2~3걸음 물러나세요. 화면 안내에 맞춰 머리부터 발끝까지 들어오게 서 주세요.'],
-      ['안내에 맞춰 2초 가만히 서기', '"가만히 서 주세요"가 뜨면 그대로 서 계세요. 3·2·1 뒤 촬영이 시작되고, 처음 2초를 준비자세로 기록합니다.'],
-      ['"시작하세요!"가 뜨면 스쿼트', '평소처럼 한 세트 · 8회 권장 (최소 6회)'],
+      ['안내에 맞춰 2초 가만히 서기', '"가만히 서 주세요"가 뜨면 그대로 서 계세요. 5부터 1까지 숫자가 줄어드는 동안 촬영이 시작되고, 마지막 2초를 준비자세로 기록합니다.'],
+      ['숫자가 끝나고 "시작하세요!"가 뜨면 스쿼트', '평소처럼 한 세트 · 8회 권장 (최소 6회)'],
       ['끝나면 2초 가만히 서기', '2초 서 있거나 화면 밖으로 나가면 촬영이 자동으로 끝나고 분석을 시작합니다.'],
     ],
   },
@@ -639,12 +639,15 @@ async function beginSoloCountdown() {
   const token = ++state.countdownToken;
   setCaptureStatus('countdown', '준비 완료', {
     action: '그대로 서 있어 주세요',
-    detail: '카운트다운이 끝나면 촬영이 시작됩니다',
+    detail: '숫자가 끝나고 "시작하세요!"가 뜨면 앉으세요',
     metrics: state.lastReadiness,
   });
   playCaptureCue('ready');
   await sleep(400);
-  for (let value = SOLO_CAPTURE_CONFIG.countdownSeconds; value >= 1; value -= 1) {
+  // 카운트다운 하나로 이어 붙인다: 녹화 전 3초(5·4·3) + 녹화 후 준비자세 2초(2·1, handleRecordingMonitor에서 표시).
+  const standCount = Math.round(SOLO_CAPTURE_CONFIG.initialStandMs / 1000);
+  const firstValue = SOLO_CAPTURE_CONFIG.countdownSeconds + standCount;
+  for (let value = firstValue; value > standCount; value -= 1) {
     if (token !== state.countdownToken || !state.captureMonitorActive) return;
     if (!state.lastReadiness?.ready) {
       cancelSoloCountdown(state.lastReadiness || { key: 'moving', message: '그 자리에서 가만히 서 주세요' });
@@ -659,7 +662,7 @@ async function beginSoloCountdown() {
     cancelSoloCountdown(state.lastReadiness || { key: 'moving', message: '그 자리에서 가만히 서 주세요' });
     return;
   }
-  setHidden(countdown, true);
+  state.shownCountdownValue = null;
   await beginRecording({ automatic: true });
 }
 
@@ -677,7 +680,19 @@ function handleRecordingMonitor(readiness, now) {
     if (elapsedMs >= SOLO_CAPTURE_CONFIG.initialStandMs
       && readyWindowMs >= SOLO_CAPTURE_CONFIG.startSignalReadyWindowMs) {
       state.recordingStartSignalAt = now;
+      state.shownCountdownValue = null;
+      setHidden(countdown, true);
+      playCaptureCue('start');
       console.info('[solo-capture] start signal ready', { elapsedSeconds, readyWindowMs });
+    } else {
+      // 준비자세 2초 동안 카운트다운(2·1)을 이어서 보여 준다. 준비 확인이 늦어지면 1에서 기다린다.
+      const value = Math.max(1, Math.ceil((SOLO_CAPTURE_CONFIG.initialStandMs - elapsedMs) / 1000));
+      if (value !== state.shownCountdownValue) {
+        state.shownCountdownValue = value;
+        countdown.textContent = String(value);
+        setHidden(countdown, false);
+        playCaptureCue('countdown');
+      }
     }
   }
 
@@ -686,8 +701,8 @@ function handleRecordingMonitor(readiness, now) {
       startReady ? 'recording_waiting' : `recording_${readiness.key || 'adjust'}`,
       startReady ? '● 촬영 중' : '위치 조정',
       {
-        action: startReady ? '잠시 그대로 서 계세요' : readinessAction(readiness.key),
-        detail: startReady ? '준비 상태를 확인하고 있습니다' : readiness.message,
+        action: startReady ? '그대로 서 있어 주세요' : readinessAction(readiness.key),
+        detail: startReady ? '숫자가 끝나고 "시작하세요!"가 뜨면 앉으세요' : readiness.message,
       },
     );
   } else if (now - state.recordingStartSignalAt < SOLO_CAPTURE_CONFIG.startSignalDisplayMs) {
@@ -897,10 +912,10 @@ async function beginRecording({ automatic = false } = {}) {
   setHidden(cameraButton, true);
   setHidden(facingControl, true);
   setHidden(stopButton, false);
-  playCaptureCue('start');
+  if (!automatic) playCaptureCue('start');
   setCaptureStatus('recording_initial_stand', '● 촬영 중', {
-    action: automatic ? '잠시 그대로 서 계세요' : '',
-    detail: automatic ? '준비 상태를 확인하고 있습니다' : '준비자세부터 시작해 주세요',
+    action: automatic ? '그대로 서 있어 주세요' : '',
+    detail: automatic ? '숫자가 끝나고 "시작하세요!"가 뜨면 앉으세요' : '준비자세부터 시작해 주세요',
   });
 }
 
@@ -909,6 +924,8 @@ async function startRecording() {
 }
 
 async function stopRecording({ reason = 'manual', analysisEndSeconds = null } = {}) {
+  setHidden(countdown, true);
+  state.shownCountdownValue = null;
   if (state.stoppingRecording || !state.recorder || state.recorder.state === 'inactive') return;
   state.stoppingRecording = true;
   stopButton.disabled = true;
