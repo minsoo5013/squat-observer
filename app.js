@@ -2792,3 +2792,91 @@ window.addEventListener('beforeunload', () => {
 });
 selectCaptureMode('solo');
 initSampleExperience().catch(() => {});
+
+// ── 전시(키오스크) 모드 ─────────────────────────────────────────────
+// 주소에 ?kiosk 가 있을 때만 켠다(기본 60초, 예: ?kiosk=90 → 90초). 일반 접속 화면과 동작은 바뀌지 않는다.
+// 결과·두 세트 비교·분석 오류 화면, 또는 카메라만 켜진 첫 화면에서 아무 조작이 없으면
+// 마지막 10초 동안 안내를 띄운 뒤 '촬영 방법을 선택하세요' 화면으로 돌아가고 앞사람 결과를 지운다.
+// 촬영 중이거나 분석이 진행 중일 때는 동작하지 않는다. 외부 사이트로 나가는 링크는 막는다.
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('kiosk')) return;
+  const idleSeconds = Math.max(30, Number(params.get('kiosk')) || 60);
+  const warnSeconds = 10;
+  document.body.dataset.kiosk = 'on';
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .kiosk-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: rgba(24, 32, 42, 0.55); }
+    .kiosk-overlay[hidden] { display: none; }
+    .kiosk-card { background: #fff; border-radius: 16px; padding: 28px 32px; max-width: 420px; text-align: center; font-size: 18px; line-height: 1.5; box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+    .kiosk-count { font-size: 40px; font-weight: 700; margin: 8px 0; }`;
+  document.head.appendChild(style);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'kiosk-overlay';
+  overlay.hidden = true;
+  overlay.innerHTML = '<div class="kiosk-card"><p>잠시 후 처음 화면으로 돌아갑니다.</p><p class="kiosk-count"></p><p>계속 보시려면 화면을 눌러 주세요.</p></div>';
+  document.body.appendChild(overlay);
+  const countEl = overlay.querySelector('.kiosk-count');
+
+  let lastActive = Date.now();
+  const markActive = () => {
+    lastActive = Date.now();
+    overlay.hidden = true;
+  };
+  ['pointerdown', 'touchstart', 'keydown', 'wheel', 'scroll'].forEach((type) => {
+    window.addEventListener(type, markActive, { passive: true, capture: true });
+  });
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest?.('a[href]');
+    if (!link) return;
+    let url;
+    try { url = new URL(link.href, window.location.href); } catch { return; }
+    if (url.origin !== window.location.origin) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
+
+  function needsReset() {
+    const view = document.body.dataset.view;
+    if (state.recorder?.state === 'recording') return false;
+    if (view === 'analysis') return Boolean(document.querySelector('.analysis-retry'));
+    if (view === 'result' || view === 'retry') return true;
+    if (view === 'home') return Boolean(state.stream) || state.captureMode !== 'solo' || !chooserInView();
+    return false;
+  }
+
+  function chooserInView() {
+    const chooser = document.querySelector('#capture-mode-question');
+    if (!chooser) return true;
+    return Math.abs(chooser.getBoundingClientRect().top) < 120;
+  }
+
+  function resetToStart() {
+    overlay.hidden = true;
+    if (document.body.dataset.view !== 'home' || state.stream) restart();
+    selectCaptureMode('solo');
+    document.querySelector('#capture-mode-question')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    lastActive = Date.now();
+  }
+
+  setInterval(() => {
+    if (!needsReset()) {
+      overlay.hidden = true;
+      return;
+    }
+    const idle = (Date.now() - lastActive) / 1000;
+    const quietReset = document.body.dataset.view === 'home' && !state.stream;
+    if (idle >= idleSeconds) {
+      resetToStart();
+    } else if (!quietReset && idle >= idleSeconds - warnSeconds) {
+      countEl.textContent = `${Math.ceil(idleSeconds - idle)}초`;
+      overlay.hidden = false;
+    } else {
+      overlay.hidden = true;
+    }
+  }, 1000);
+})();
